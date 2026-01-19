@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import MeliConnectionCard from '@/components/dashboard/MeliConnectionCard'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -20,13 +19,6 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  // Verificar si tiene MELI conectado
-  const { data: meliConnection } = await supabase
-    .from('meli_connections')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="mb-8">
@@ -39,10 +31,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6">
-        {/* Estado de conexión con MercadoLibre */}
-        <MeliConnectionCard connection={meliConnection} />
-
-        {/* Tarjeta de productos */}
+        {/* Tarjeta de estado vacío */}
         <Card>
           <CardHeader>
             <CardTitle>Mis Productos</CardTitle>
@@ -59,9 +48,9 @@ export default async function DashboardPage() {
                     Lista de productos vacía
                   </h3>
                   <p className="text-gray-600 max-w-md">
-                    {!meliConnection
-                      ? 'Conecta tu cuenta de MercadoLibre para ver tus publicaciones.'
-                      : 'Próximamente podrás sincronizar tus publicaciones automáticamente.'}
+                    Aún no has conectado tu cuenta de MercadoLibre.
+                    En la siguiente fase podrás conectar tu cuenta y
+                    sincronizar tus publicaciones para analizarlas.
                   </p>
                 </div>
               </AlertDescription>
@@ -81,12 +70,8 @@ export default async function DashboardPage() {
                 <span>Cuenta creada y autenticación funcionando</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2">{meliConnection ? '✅' : '⏳'}</span>
-                <span>
-                  {meliConnection
-                    ? 'MercadoLibre conectado'
-                    : 'Conectar con MercadoLibre'}
-                </span>
+                <span className="mr-2">⏳</span>
+                <span>Próximamente: Conectar con MercadoLibre (Fase 1B)</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">⏳</span>
