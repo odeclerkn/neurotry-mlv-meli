@@ -46,7 +46,8 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        router.refresh()
+        // Redirigir a URL limpia sin query params
+        window.location.href = '/dashboard'
       } else {
         alert('Error al desconectar la cuenta')
         setLoading(null)
@@ -75,7 +76,8 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        router.refresh()
+        // Redirigir a URL limpia sin query params
+        window.location.href = '/dashboard'
       } else {
         alert('Error al eliminar la cuenta')
         setLoading(null)
@@ -105,7 +107,8 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        router.refresh()
+        // Redirigir a URL limpia sin query params
+        window.location.href = '/dashboard'
       } else {
         const data = await response.json()
         alert(data.error || 'Error al cambiar de cuenta')
@@ -159,17 +162,41 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
           Conecta tu cuenta de MercadoLibre para sincronizar tus productos
         </CardDescription>
         {connections.length > 0 && (
-          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-800">
-            💡 <strong>Tip:</strong> Para conectar una cuenta diferente a la que ya tienes logueada en MercadoLibre,{' '}
-            <a
-              href="https://www.mercadolibre.com.ar/logout"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold hover:text-blue-900"
-            >
-              cierra sesión en MELI primero
-            </a>
-            {' '}y luego haz click en conectar.
+          <div className="mt-2 space-y-2">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">💡</span>
+                <div className="flex-1">
+                  <p className="text-blue-900 font-semibold mb-1">
+                    Cuentas conectadas: {connections.filter(c => c.status === 'connected').map(c => c.meli_user_id).join(', ') || 'Ninguna'}
+                  </p>
+                  <p className="text-blue-800 mb-2">
+                    Para conectar una cuenta <strong>diferente</strong>:
+                  </p>
+                  <ol className="text-blue-800 space-y-1 mb-2 ml-4 list-decimal">
+                    <li>Abre MercadoLibre en otra pestaña</li>
+                    <li>Click en tu nombre (arriba a la derecha)</li>
+                    <li>Click en "Salir"</li>
+                    <li>Vuelve aquí y haz click en "Conectar otra cuenta"</li>
+                  </ol>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open('https://www.mercadolibre.com.ar', '_blank')}
+                    className="text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    🔗 Abrir MercadoLibre
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs">
+              <p className="text-gray-700 font-semibold mb-1">Estados de cuenta:</p>
+              <ul className="space-y-1 text-gray-600">
+                <li><Badge className="bg-green-500 text-white mr-2">✓ Conectada</Badge> = Tiene tokens válidos de API. Puede sincronizar productos.</li>
+                <li><Badge variant="secondary" className="bg-gray-400 mr-2">○ Desconectada</Badge> = Tokens invalidados. Solo muestra productos históricos. Click "Reconectar" para volver a sincronizar.</li>
+              </ul>
+            </div>
           </div>
         )}
       </CardHeader>
@@ -204,13 +231,19 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           {connection.status === 'connected' ? (
-                            <Badge variant="default" className="bg-green-500">
-                              ✓ Conectada
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default" className="bg-green-500">
+                                ✓ Conectada
+                              </Badge>
+                              <span className="text-xs text-gray-500">Puede sincronizar</span>
+                            </div>
                           ) : (
-                            <Badge variant="secondary" className="bg-gray-400">
-                              ○ Desconectada
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="bg-gray-400">
+                                ○ Desconectada
+                              </Badge>
+                              <span className="text-xs text-gray-500">Sin acceso a API</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -269,14 +302,20 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                   Conectar otra cuenta de MercadoLibre
                 </Button>
 
-                {activeConnection && activeConnection.status === 'connected' && (
-                  <Button
-                    onClick={handleSyncProducts}
-                    disabled={loading === 'sync'}
-                    className="w-full"
-                  >
-                    {loading === 'sync' ? 'Sincronizando...' : 'Sincronizar productos'}
-                  </Button>
+                {activeConnection && (
+                  activeConnection.status === 'connected' ? (
+                    <Button
+                      onClick={handleSyncProducts}
+                      disabled={loading === 'sync'}
+                      className="w-full"
+                    >
+                      {loading === 'sync' ? 'Sincronizando...' : 'Sincronizar productos'}
+                    </Button>
+                  ) : (
+                    <div className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-center text-sm text-gray-600">
+                      ⚠️ La cuenta activa está desconectada. Reconéctala para sincronizar productos.
+                    </div>
+                  )
                 )}
               </div>
             </>

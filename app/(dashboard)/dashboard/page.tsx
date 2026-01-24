@@ -2,13 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { MeliConnectButton } from '@/components/dashboard/meli-connect-button'
+import { ClearSuccessMessage } from '@/components/dashboard/clear-success-message'
 import { getAllMeliConnections, getMeliProducts, getActiveMeliConnection } from '@/lib/meli/tokens'
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { meli_success?: string; meli_error?: string }
+  searchParams: { meli_success?: string; meli_error?: string; meli_user_id?: string }
 }) {
   const supabase = await createClient()
 
@@ -37,6 +39,8 @@ export default async function DashboardPage({
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <ClearSuccessMessage />
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Bienvenido, {profile?.full_name || user.email}
@@ -50,7 +54,18 @@ export default async function DashboardPage({
       {searchParams.meli_success && (
         <Alert className="mb-6 bg-green-50 border-green-200">
           <AlertDescription className="text-green-800">
-            ✅ Cuenta de MercadoLibre conectada exitosamente
+            {searchParams.meli_success === 'new_connection' && (
+              <>✅ Nueva cuenta de MercadoLibre conectada (ID: {searchParams.meli_user_id})</>
+            )}
+            {searchParams.meli_success === 'reconnected' && (
+              <>✅ Cuenta reconectada exitosamente (ID: {searchParams.meli_user_id})</>
+            )}
+            {searchParams.meli_success === 'already_connected' && (
+              <>✅ Tokens actualizados exitosamente (ID: {searchParams.meli_user_id})</>
+            )}
+            {searchParams.meli_success === 'true' && (
+              <>✅ Cuenta de MercadoLibre conectada exitosamente</>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -72,11 +87,18 @@ export default async function DashboardPage({
           <CardHeader>
             <CardTitle>Mis Productos</CardTitle>
             <CardDescription>
-              {activeConnection
-                ? activeConnection.status === 'connected'
-                  ? `Productos de la cuenta ${activeConnection.meli_user_id} (Conectada)`
-                  : `Productos de la cuenta ${activeConnection.meli_user_id} (Desconectada - datos históricos)`
-                : 'Tus publicaciones de MercadoLibre aparecerán aquí'}
+              {activeConnection ? (
+                <div className="flex items-center gap-2">
+                  <span>Productos de la cuenta {activeConnection.meli_user_id}</span>
+                  {activeConnection.status === 'connected' ? (
+                    <Badge className="bg-green-500">✓ Conectada - Puede sincronizar</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-gray-400">○ Desconectada - Solo históricos</Badge>
+                  )}
+                </div>
+              ) : (
+                'Tus publicaciones de MercadoLibre aparecerán aquí'
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -88,7 +88,30 @@ export async function GET(request: NextRequest) {
     console.log('- Access Token:', accessToken ? 'PRESENTE' : 'FALTANTE')
     console.log('- Refresh Token:', refreshToken ? 'PRESENTE' : 'FALTANTE')
 
-    // Guardar conexión en la base de datos
+    // Verificar si esta cuenta ya existe para este usuario
+    const { data: existingConnection } = await supabase
+      .from('meli_connections')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('meli_user_id', String(meliUserId))
+      .single()
+
+    let message = 'true'
+
+    if (existingConnection) {
+      if (existingConnection.status === 'connected') {
+        console.log('Esta cuenta MELI ya estaba conectada, actualizando tokens...')
+        message = 'already_connected'
+      } else {
+        console.log('Esta cuenta MELI estaba desconectada, reconectando...')
+        message = 'reconnected'
+      }
+    } else {
+      console.log('Nueva cuenta MELI, guardando...')
+      message = 'new_connection'
+    }
+
+    // Guardar conexión en la base de datos (upsert)
     console.log('Guardando conexión en la base de datos...')
     await saveMeliConnection({
       userId: user.id,
@@ -100,10 +123,10 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('Conexión guardada exitosamente')
-    console.log('Redirigiendo a:', `${baseUrl}/dashboard?meli_success=true`)
+    console.log('Redirigiendo a:', `${baseUrl}/dashboard?meli_success=${message}&meli_user_id=${meliUserId}`)
 
     // Redirigir al dashboard con éxito
-    const response = NextResponse.redirect(`${baseUrl}/dashboard?meli_success=true`)
+    const response = NextResponse.redirect(`${baseUrl}/dashboard?meli_success=${message}&meli_user_id=${meliUserId}`)
 
     // Limpiar la cookie del code_verifier
     response.cookies.delete('meli_code_verifier')
