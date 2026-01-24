@@ -73,7 +73,9 @@ export default async function DashboardPage({
             <CardTitle>Mis Productos</CardTitle>
             <CardDescription>
               {activeConnection
-                ? `Productos de la cuenta ${activeConnection.meli_user_id}`
+                ? activeConnection.status === 'connected'
+                  ? `Productos de la cuenta ${activeConnection.meli_user_id} (Conectada)`
+                  : `Productos de la cuenta ${activeConnection.meli_user_id} (Desconectada - datos históricos)`
                 : 'Tus publicaciones de MercadoLibre aparecerán aquí'}
             </CardDescription>
           </CardHeader>
@@ -90,7 +92,9 @@ export default async function DashboardPage({
                     </h3>
                     <p className="text-gray-600 max-w-md">
                       {activeConnection
-                        ? 'Haz clic en "Sincronizar productos" para cargar tus publicaciones de MercadoLibre.'
+                        ? activeConnection.status === 'connected'
+                          ? 'Haz clic en "Sincronizar productos" para cargar tus publicaciones de MercadoLibre.'
+                          : 'Esta cuenta está desconectada. Reconéctala para sincronizar nuevos productos.'
                         : 'Conecta tu cuenta de MercadoLibre para ver tus publicaciones aquí.'}
                     </p>
                   </div>

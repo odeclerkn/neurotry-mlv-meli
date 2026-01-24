@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncMeliProducts } from '@/lib/meli/client'
-import { saveMeliProducts, getActiveMeliConnection } from '@/lib/meli/tokens'
+import { saveMeliProducts, getActiveMeliConnection, getMeliConnectionById } from '@/lib/meli/tokens'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +30,23 @@ export async function POST(request: NextRequest) {
         )
       }
       finalConnectionId = activeConnection.id
+    }
+
+    // Verificar que la conexión esté conectada (no desconectada)
+    const connection = await getMeliConnectionById(finalConnectionId)
+
+    if (!connection) {
+      return NextResponse.json(
+        { error: 'Connection not found' },
+        { status: 404 }
+      )
+    }
+
+    if (connection.status === 'disconnected') {
+      return NextResponse.json(
+        { error: 'Cannot sync products from a disconnected account. Please reconnect first.' },
+        { status: 400 }
+      )
     }
 
     // Sincronizar productos

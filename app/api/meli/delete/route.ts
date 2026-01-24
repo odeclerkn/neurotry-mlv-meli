@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { disconnectMeliConnection } from '@/lib/meli/tokens'
+import { deleteMeliConnection } from '@/lib/meli/tokens'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,12 +23,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Desconectar (invalidar tokens pero mantener en la lista)
-    await disconnectMeliConnection(connectionId, user.id)
+    // Eliminar completamente (borra cuenta y productos)
+    await deleteMeliConnection(connectionId, user.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in /api/meli/disconnect:', error)
+    console.error('Error in /api/meli/delete:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

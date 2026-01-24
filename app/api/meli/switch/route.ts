@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { setActiveConnection } from '@/lib/meli/tokens'
+import { setActiveConnection, getMeliConnectionById } from '@/lib/meli/tokens'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +19,23 @@ export async function POST(request: NextRequest) {
     if (!connectionId) {
       return NextResponse.json(
         { error: 'Connection ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que la conexión esté conectada antes de activarla
+    const connection = await getMeliConnectionById(connectionId)
+
+    if (!connection) {
+      return NextResponse.json(
+        { error: 'Connection not found' },
+        { status: 404 }
+      )
+    }
+
+    if (connection.status === 'disconnected') {
+      return NextResponse.json(
+        { error: 'Cannot activate a disconnected account. Please reconnect first.' },
         { status: 400 }
       )
     }

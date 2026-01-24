@@ -18,7 +18,7 @@ export default function HomePage() {
               href="/register"
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
             >
-              Comenzar Gratis
+              Comenzar
             </Link>
             <Link
               href="/login"

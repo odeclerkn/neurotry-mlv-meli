@@ -8,6 +8,7 @@ export interface MeliConnection {
   refresh_token: string
   expires_at: string
   is_active: boolean
+  status: 'connected' | 'disconnected'
   site_id: string
   created_at: string
   updated_at: string
@@ -69,6 +70,7 @@ export async function saveMeliConnection({
       refresh_token: refreshToken,
       expires_at: expiresAt.toISOString(),
       is_active: true,
+      status: 'connected',
       site_id: siteId,
       updated_at: new Date().toISOString()
     }, {
@@ -220,7 +222,33 @@ export async function setActiveConnection(userId: string, connectionId: string) 
 }
 
 /**
- * Elimina una conexión de MercadoLibre
+ * Desconecta una conexión (invalida tokens pero mantiene los datos)
+ */
+export async function disconnectMeliConnection(connectionId: string, userId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('meli_connections')
+    .update({
+      status: 'disconnected',
+      is_active: false,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', connectionId)
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error disconnecting MELI connection:', error)
+    throw error
+  }
+
+  return data as MeliConnection
+}
+
+/**
+ * Elimina completamente una conexión de MercadoLibre (borra todo)
  */
 export async function deleteMeliConnection(connectionId: string, userId: string) {
   const supabase = await createClient()
