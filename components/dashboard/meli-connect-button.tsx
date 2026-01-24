@@ -140,8 +140,16 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
 
       if (response.ok) {
         const data = await response.json()
+
+        if (data.count === 0) {
+          alert('No se encontraron productos activos en tu cuenta de MercadoLibre')
+          setLoading(null)
+          return
+        }
+
         alert(`Sincronizados ${data.count} productos correctamente`)
-        router.refresh()
+        // Redirigir a URL limpia
+        window.location.href = '/dashboard'
       } else {
         const data = await response.json()
         alert(data.error || 'Error al sincronizar productos')

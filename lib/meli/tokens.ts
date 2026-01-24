@@ -269,6 +269,12 @@ export async function deleteMeliConnection(connectionId: string, userId: string)
  * Guarda o actualiza productos de una conexión
  */
 export async function saveMeliProducts(connectionId: string, products: any[]) {
+  // Si no hay productos, retornar array vacío sin intentar guardar
+  if (products.length === 0) {
+    console.log('No hay productos para guardar')
+    return []
+  }
+
   const supabase = await createClient()
 
   const productsData = products.map(product => ({
