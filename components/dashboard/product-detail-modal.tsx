@@ -21,10 +21,19 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const [keywords, setKeywords] = useState<any[]>([])
   const [loadingKeywords, setLoadingKeywords] = useState(false)
   const [keywordsSource, setKeywordsSource] = useState<string>('')
+  const [competitors, setCompetitors] = useState<any[]>([])
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false)
+  const [analysis, setAnalysis] = useState<any>(null)
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false)
 
   useEffect(() => {
-    if (isOpen && product?.category_id) {
-      fetchKeywords()
+    if (isOpen && product) {
+      if (product.category_id) {
+        fetchKeywords()
+      }
+      if (product.meli_product_id) {
+        fetchCompetitors()
+      }
     }
   }, [isOpen, product])
 
@@ -57,6 +66,56 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     }
   }
 
+  const fetchCompetitors = async () => {
+    if (!product?.meli_product_id) return
+
+    console.log('Fetching competidores para:', product.meli_product_id)
+    setLoadingCompetitors(true)
+    try {
+      const response = await fetch(`/api/meli/similar-products?product_id=${product.meli_product_id}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Competidores recibidos:', data)
+        setCompetitors(data.competitors || [])
+      } else {
+        console.error('Error fetching competitors:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching competitors:', error)
+    } finally {
+      setLoadingCompetitors(false)
+    }
+  }
+
+  const fetchAnalysis = async () => {
+    if (!product?.meli_product_id || keywords.length === 0) return
+
+    console.log('Analizando publicación con IA...')
+    setLoadingAnalysis(true)
+    try {
+      const response = await fetch('/api/meli/analyze-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.meli_product_id,
+          keywords: keywords
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Análisis recibido:', data)
+        setAnalysis(data.analysis)
+      } else {
+        console.error('Error en análisis:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching analysis:', error)
+    } finally {
+      setLoadingAnalysis(false)
+    }
+  }
+
   // Función para verificar si un keyword está presente en título o descripción
   const isKeywordUsed = (keyword: string): boolean => {
     if (!product) return false
@@ -67,6 +126,12 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
     // Buscar el keyword completo o como parte de una palabra
     return title.includes(normalizedKeyword) || description.includes(normalizedKeyword)
+  }
+
+  // Función para obtener el análisis de un keyword específico
+  const getKeywordAnalysis = (keyword: string) => {
+    if (!analysis?.keywordAnalysis) return null
+    return analysis.keywordAnalysis.find((ka: any) => ka.keyword.toLowerCase() === keyword.toLowerCase())
   }
 
   if (!product) return null
@@ -183,11 +248,22 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               <h4 className="text-lg font-sans font-semibold text-primary-900">
                 Keywords Trending de la Categoría
               </h4>
-              {keywordsSource && keywords.length > 0 && (
-                <Badge variant="info" className="text-xs">
-                  {keywordsSource === 'trends' ? 'De API Trends' : 'De productos más vendidos'}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {keywordsSource && keywords.length > 0 && (
+                  <Badge variant="info" className="text-xs">
+                    {keywordsSource === 'trends' ? 'De API Trends' : 'De productos más vendidos'}
+                  </Badge>
+                )}
+                {keywords.length > 0 && !analysis && (
+                  <button
+                    onClick={fetchAnalysis}
+                    disabled={loadingAnalysis}
+                    className="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 transition-colors"
+                  >
+                    {loadingAnalysis ? 'Analizando...' : '🤖 Analizar con IA'}
+                  </button>
+                )}
+              </div>
             </div>
             {loadingKeywords ? (
               <Alert variant="info">
@@ -206,45 +282,89 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               </div>
             ) && (
               <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
-                <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-xs font-body text-neutral-600">Utilizado en la publicación</span>
+                    <span className="text-xs font-body text-neutral-600">Relevante y utilizado</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <span className="text-xs font-body text-neutral-600">Relevante pero no utilizado</span>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span className="text-xs font-body text-neutral-600">No utilizado</span>
+                    <span className="text-xs font-body text-neutral-600">No relevante</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {keywords.map((kw, index) => {
                     const isUsed = isKeywordUsed(kw.keyword)
+                    const kwAnalysis = getKeywordAnalysis(kw.keyword)
+
+                    // Determinar el color basado en análisis de IA o análisis básico
+                    let statusColor = 'bg-gray-500'
+                    let borderColor = 'border-gray-200'
+                    let statusTitle = 'Sin analizar'
+
+                    if (kwAnalysis) {
+                      if (kwAnalysis.isRelevant && isUsed) {
+                        statusColor = 'bg-green-500'
+                        borderColor = 'border-green-200 hover:border-green-300'
+                        statusTitle = `Relevante (${kwAnalysis.score}/10): ${kwAnalysis.reason}`
+                      } else if (kwAnalysis.isRelevant && !isUsed) {
+                        statusColor = 'bg-yellow-500'
+                        borderColor = 'border-yellow-200 hover:border-yellow-300'
+                        statusTitle = `Relevante pero no usado (${kwAnalysis.score}/10): ${kwAnalysis.reason}`
+                      } else {
+                        statusColor = 'bg-red-500'
+                        borderColor = 'border-red-200 hover:border-red-300'
+                        statusTitle = `No relevante (${kwAnalysis.score}/10): ${kwAnalysis.reason}`
+                      }
+                    } else {
+                      // Sin análisis IA, usar lógica básica
+                      if (isUsed) {
+                        statusColor = 'bg-green-500'
+                        borderColor = 'border-green-200 hover:border-green-300'
+                        statusTitle = 'Utilizado en la publicación'
+                      } else {
+                        statusColor = 'bg-gray-400'
+                        borderColor = 'border-gray-200 hover:border-gray-300'
+                        statusTitle = 'No utilizado - Analizar con IA para ver si es relevante'
+                      }
+                    }
+
                     return (
                       <div
                         key={index}
-                        className={`flex items-center justify-between bg-white p-3 rounded-lg border transition-colors ${
-                          isUsed
-                            ? 'border-green-200 hover:border-green-300'
-                            : 'border-red-200 hover:border-red-300'
-                        }`}
+                        className={`flex items-center justify-between bg-white p-3 rounded-lg border transition-colors ${borderColor}`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-sans font-bold text-sm">
                             {index + 1}
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-1">
                             <div
-                              className={`w-3 h-3 rounded-full ${
-                                isUsed ? 'bg-green-500' : 'bg-red-500'
-                              }`}
-                              title={isUsed ? 'Keyword utilizado en título o descripción' : 'Keyword no utilizado - considere agregarlo'}
+                              className={`w-3 h-3 rounded-full ${statusColor} flex-shrink-0`}
+                              title={statusTitle}
                             ></div>
-                            <span className="font-body text-sm text-neutral-900">
-                              {kw.keyword}
-                            </span>
+                            <div className="flex flex-col flex-1">
+                              <span className="font-body text-sm text-neutral-900">
+                                {kw.keyword}
+                              </span>
+                              {kwAnalysis && (
+                                <span className="text-xs text-neutral-500 truncate">
+                                  {kwAnalysis.reason}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end">
+                        <div className="flex flex-col items-end ml-2">
+                          {kwAnalysis && (
+                            <div className="text-xs font-semibold text-primary-700 mb-1">
+                              {kwAnalysis.score}/10
+                            </div>
+                          )}
                           <div className="text-xs font-body text-neutral-600">
                             {keywordsSource === 'products' ? (
                               <span>{kw.searches} menciones</span>
@@ -274,6 +394,110 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               </Alert>
             )}
           </div>
+
+          {/* Sugerencias de IA */}
+          {analysis?.suggestions && (
+            <div className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🤖</span>
+                <h4 className="text-lg font-sans font-semibold text-purple-900">
+                  Sugerencias de Optimización con IA
+                </h4>
+              </div>
+
+              {analysis.suggestions.optimizedTitle && analysis.suggestions.optimizedTitle !== product.title && (
+                <div className="mb-4">
+                  <p className="text-xs font-body text-neutral-600 mb-1">Título optimizado sugerido:</p>
+                  <div className="bg-white p-3 rounded-lg border border-purple-200">
+                    <p className="text-sm font-body text-neutral-900">
+                      {analysis.suggestions.optimizedTitle}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {analysis.suggestions.descriptionImprovements && analysis.suggestions.descriptionImprovements.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-body text-neutral-600 mb-2">Mejoras para la descripción:</p>
+                  <ul className="space-y-2">
+                    {analysis.suggestions.descriptionImprovements.map((suggestion: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm font-body text-neutral-700 bg-white p-2 rounded border border-purple-100">
+                        <span className="text-purple-500 font-bold">•</span>
+                        <span>{suggestion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {analysis.overallScore && (
+                <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-purple-200">
+                  <span className="text-sm font-body text-neutral-600">Score de optimización:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                        style={{ width: `${(analysis.overallScore / 10) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-lg font-sans font-bold text-primary-700">
+                      {analysis.overallScore}/10
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {analysis.summary && (
+                <div className="mt-3 text-xs font-body text-neutral-600 bg-white p-3 rounded-lg border border-purple-100">
+                  {analysis.summary}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Análisis de Competidores */}
+          {competitors.length > 0 && (
+            <div className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">📊</span>
+                <h4 className="text-lg font-sans font-semibold text-blue-900">
+                  Productos Similares Exitosos
+                </h4>
+                <Badge variant="info" className="text-xs">
+                  Top {competitors.length}
+                </Badge>
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {competitors.slice(0, 5).map((comp: any, idx: number) => (
+                  <div key={idx} className="bg-white p-3 rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
+                    <div className="flex gap-3">
+                      {comp.thumbnail && (
+                        <img
+                          src={comp.thumbnail}
+                          alt={comp.title}
+                          className="w-16 h-16 object-cover rounded border border-neutral-200"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="text-sm font-body text-neutral-900 mb-1 line-clamp-2">
+                          {comp.title}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="text-green-600 font-semibold">
+                            ${comp.price?.toLocaleString('es-AR')}
+                          </span>
+                          <span className="text-neutral-600">
+                            Vendidos: <span className="font-semibold text-primary-700">{comp.sold_quantity || 0}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Metadatos */}
           <div className="text-xs font-body text-neutral-500 space-y-1 bg-neutral-50 p-3 rounded-lg">
