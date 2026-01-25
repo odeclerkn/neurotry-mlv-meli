@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface MeliConnection {
   id: string
@@ -22,6 +30,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null)
 
   const activeConnection = connections.find(c => c.is_active)
 
@@ -30,13 +41,17 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
     window.location.href = '/api/meli/connect'
   }
 
-  const handleDisconnect = async (connectionId: string) => {
-    if (!confirm('¿Desconectar esta cuenta? Se invalidarán los tokens pero se mantendrán los datos y publicaciones.')) {
-      return
-    }
+  const openDisconnectDialog = (connectionId: string) => {
+    setSelectedConnectionId(connectionId)
+    setDisconnectDialogOpen(true)
+  }
 
-    setLoading(connectionId)
+  const handleDisconnect = async () => {
+    if (!selectedConnectionId) return
+
+    setLoading(selectedConnectionId)
     setErrorMessage(null)
+    setDisconnectDialogOpen(false)
 
     try {
       const response = await fetch('/api/meli/disconnect', {
@@ -44,7 +59,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ connectionId })
+        body: JSON.stringify({ connectionId: selectedConnectionId })
       })
 
       if (response.ok) {
@@ -61,13 +76,17 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
     }
   }
 
-  const handleDelete = async (connectionId: string) => {
-    if (!confirm('⚠️ ¿Eliminar completamente esta cuenta? Se borrarán todos los datos y publicaciones. Esta acción no se puede deshacer.')) {
-      return
-    }
+  const openDeleteDialog = (connectionId: string) => {
+    setSelectedConnectionId(connectionId)
+    setDeleteDialogOpen(true)
+  }
 
-    setLoading(`delete-${connectionId}`)
+  const handleDelete = async () => {
+    if (!selectedConnectionId) return
+
+    setLoading(`delete-${selectedConnectionId}`)
     setErrorMessage(null)
+    setDeleteDialogOpen(false)
 
     try {
       const response = await fetch('/api/meli/delete', {
@@ -75,7 +94,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ connectionId })
+        body: JSON.stringify({ connectionId: selectedConnectionId })
       })
 
       if (response.ok) {
@@ -301,7 +320,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDisconnect(connection.id)}
+                            onClick={() => openDisconnectDialog(connection.id)}
                             disabled={loading === connection.id}
                           >
                             {loading === connection.id ? 'Desconectando...' : 'Desconectar'}
@@ -319,7 +338,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDelete(connection.id)}
+                        onClick={() => openDeleteDialog(connection.id)}
                         disabled={loading === `delete-${connection.id}`}
                       >
                         {loading === `delete-${connection.id}` ? 'Eliminando...' : 'Eliminar'}
@@ -360,6 +379,64 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
           )}
         </div>
       </CardContent>
+
+      {/* Dialog de confirmación para desconectar */}
+      <Dialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neurotry - Desconectar cuenta</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas desconectar esta cuenta de MercadoLibre?
+              <br /><br />
+              Se invalidarán los tokens de acceso pero se mantendrán los datos y publicaciones sincronizadas anteriormente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDisconnectDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleDisconnect}
+            >
+              Desconectar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación para eliminar */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">⚠️ Neurotry - Eliminar cuenta</DialogTitle>
+            <DialogDescription>
+              <strong className="text-red-700">Esta acción no se puede deshacer.</strong>
+              <br /><br />
+              ¿Estás seguro que deseas eliminar completamente esta cuenta de MercadoLibre?
+              <br /><br />
+              Se borrarán <strong>todos los datos y publicaciones</strong> asociadas a esta cuenta.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              Eliminar permanentemente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
