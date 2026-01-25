@@ -388,7 +388,14 @@ export async function getMeliProducts(connectionId: string): Promise<MeliProduct
 
   const { data, error } = await supabase
     .from('meli_products')
-    .select('*')
+    .select(`
+      *,
+      product_ai_analysis (
+        overall_score,
+        ai_provider,
+        analyzed_at
+      )
+    `)
     .eq('connection_id', connectionId)
     .order('created_at', { ascending: false })
 

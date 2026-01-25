@@ -16,6 +16,92 @@ function getAIProvider(): 'anthropic' | 'openai' | 'gemini' | 'none' {
   return 'none'
 }
 
+// GET: Obtener análisis guardado de un producto
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const meliProductId = searchParams.get('product_id')
+
+    if (!meliProductId) {
+      return NextResponse.json(
+        { error: 'product_id is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Buscar el producto y su análisis
+    const { data, error } = await supabase
+      .from('meli_products')
+      .select(`
+        id,
+        meli_product_id,
+        title,
+        description,
+        product_ai_analysis (
+          suggested_title,
+          suggested_description,
+          improvements_explanation,
+          overall_score,
+          summary,
+          keyword_analysis,
+          suggestions,
+          ai_provider,
+          analyzed_at
+        )
+      `)
+      .eq('meli_product_id', meliProductId)
+      .single()
+
+    if (error) {
+      console.error('Error obteniendo análisis:', error)
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    // Si no tiene análisis, retornar null
+    if (!data.product_ai_analysis || data.product_ai_analysis.length === 0) {
+      return NextResponse.json({
+        hasAnalysis: false,
+        analysis: null
+      })
+    }
+
+    const savedAnalysis = Array.isArray(data.product_ai_analysis)
+      ? data.product_ai_analysis[0]
+      : data.product_ai_analysis
+
+    return NextResponse.json({
+      hasAnalysis: true,
+      analysis: {
+        keywordAnalysis: savedAnalysis.keyword_analysis,
+        suggestions: savedAnalysis.suggestions,
+        overallScore: savedAnalysis.overall_score,
+        summary: savedAnalysis.summary
+      },
+      provider: savedAnalysis.ai_provider,
+      analyzedAt: savedAnalysis.analyzed_at
+    })
+  } catch (error) {
+    console.error('Error in GET /api/meli/analyze-listing:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -56,7 +142,23 @@ export async function POST(request: NextRequest) {
 
     const accessToken = await getValidAccessToken(activeConnection.id)
 
-    // Obtener información completa del producto
+    // Obtener el producto de nuestra BD para tener el UUID
+    const { data: dbProduct, error: dbError } = await supabase
+      .from('meli_products')
+      .select('id, meli_product_id, title, description')
+      .eq('meli_product_id', product_id)
+      .eq('connection_id', activeConnection.id)
+      .single()
+
+    if (dbError || !dbProduct) {
+      console.error('Error obteniendo producto de BD:', dbError)
+      return NextResponse.json(
+        { error: 'Product not found in database' },
+        { status: 404 }
+      )
+    }
+
+    // Obtener información completa del producto desde MELI API
     const productResponse = await fetch(`${MELI_API_URL}/items/${product_id}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -104,6 +206,29 @@ export async function POST(request: NextRequest) {
 
     const analysis = JSON.parse(jsonMatch[0])
 
+    // Guardar análisis en la base de datos (UPSERT)
+    const { error: saveError } = await supabase
+      .from('product_ai_analysis')
+      .upsert({
+        product_id: dbProduct.id,
+        suggested_title: analysis.suggestions?.optimizedTitle || null,
+        suggested_description: analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
+        improvements_explanation: analysis.summary || null,
+        overall_score: analysis.overallScore || 0,
+        summary: analysis.summary || null,
+        keyword_analysis: analysis.keywordAnalysis || [],
+        suggestions: analysis.suggestions || {},
+        ai_provider: provider,
+        analyzed_at: new Date().toISOString()
+      }, {
+        onConflict: 'product_id'
+      })
+
+    if (saveError) {
+      console.error('Error guardando análisis en BD:', saveError)
+      // No retornar error, solo loguear - el análisis se generó correctamente
+    }
+
     return NextResponse.json({
       success: true,
       analysis,
@@ -113,7 +238,8 @@ export async function POST(request: NextRequest) {
         description: productData.description?.plain_text,
         attributes: productData.attributes
       },
-      provider
+      provider,
+      saved: !saveError
     })
   } catch (error) {
     console.error('Error in /api/meli/analyze-listing:', error)
@@ -254,6 +380,19 @@ async function basicAnalysis(product_id: string, keywords: any[]) {
 
     const accessToken = await getValidAccessToken(activeConnection.id)
 
+    // Obtener el producto de nuestra BD
+    const { data: dbProduct, error: dbError } = await supabase
+      .from('meli_products')
+      .select('id, meli_product_id, title, description')
+      .eq('meli_product_id', product_id)
+      .eq('connection_id', activeConnection.id)
+      .single()
+
+    if (dbError || !dbProduct) {
+      console.error('Error obteniendo producto de BD:', dbError)
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
     const productResponse = await fetch(`${MELI_API_URL}/items/${product_id}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -307,27 +446,52 @@ async function basicAnalysis(product_id: string, keywords: any[]) {
       }
     })
 
+    const analysis = {
+      keywordAnalysis,
+      suggestions: {
+        optimizedTitle: productData.title,
+        descriptionImprovements: [
+          'Configure una API key de IA (OPENAI_API_KEY, GEMINI_API_KEY o ANTHROPIC_API_KEY) para obtener sugerencias avanzadas'
+        ],
+        missingAttributes: []
+      },
+      overallScore: 5,
+      summary: 'Análisis básico completado. Configure una API key de IA para análisis avanzado.'
+    }
+
+    // Guardar análisis básico en la BD
+    const { error: saveError } = await supabase
+      .from('product_ai_analysis')
+      .upsert({
+        product_id: dbProduct.id,
+        suggested_title: analysis.suggestions.optimizedTitle,
+        suggested_description: analysis.suggestions.descriptionImprovements.join('\n\n'),
+        improvements_explanation: analysis.summary,
+        overall_score: analysis.overallScore,
+        summary: analysis.summary,
+        keyword_analysis: analysis.keywordAnalysis,
+        suggestions: analysis.suggestions,
+        ai_provider: 'basic',
+        analyzed_at: new Date().toISOString()
+      }, {
+        onConflict: 'product_id'
+      })
+
+    if (saveError) {
+      console.error('Error guardando análisis básico en BD:', saveError)
+    }
+
     return NextResponse.json({
       success: true,
-      analysis: {
-        keywordAnalysis,
-        suggestions: {
-          optimizedTitle: productData.title,
-          descriptionImprovements: [
-            'Configure una API key de IA (OPENAI_API_KEY, GEMINI_API_KEY o ANTHROPIC_API_KEY) para obtener sugerencias avanzadas'
-          ],
-          missingAttributes: []
-        },
-        overallScore: 5,
-        summary: 'Análisis básico completado. Configure una API key de IA para análisis avanzado.'
-      },
+      analysis,
       product: {
         id: productData.id,
         title: productData.title,
         description: productData.description?.plain_text,
         attributes: productData.attributes
       },
-      provider: 'basic'
+      provider: 'basic',
+      saved: !saveError
     })
   } catch (error) {
     console.error('Error in basicAnalysis:', error)

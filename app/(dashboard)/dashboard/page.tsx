@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { MeliConnectButton } from '@/components/dashboard/meli-connect-button'
 import { ClearSuccessMessage } from '@/components/dashboard/clear-success-message'
 import { ProductsTable } from '@/components/dashboard/products-table'
+import { ExportAnalysisButton } from '@/components/dashboard/export-analysis-button'
 import { getAllMeliConnections, getMeliProducts, getActiveMeliConnection } from '@/lib/meli/tokens'
 
 export default async function DashboardPage({
@@ -34,8 +35,19 @@ export default async function DashboardPage({
 
   // Obtener productos si hay conexión activa
   let products: Awaited<ReturnType<typeof getMeliProducts>> = []
+  let productsWithAnalysis = 0
   if (activeConnection) {
     products = await getMeliProducts(activeConnection.id)
+    // Contar productos con análisis (puede ser array u objeto)
+    productsWithAnalysis = products.filter((p: any) => {
+      if (Array.isArray(p.product_ai_analysis)) {
+        return p.product_ai_analysis.length > 0
+      }
+      return p.product_ai_analysis && typeof p.product_ai_analysis === 'object'
+    }).length
+
+    console.log('Dashboard - Total productos:', products.length)
+    console.log('Dashboard - Con análisis:', productsWithAnalysis)
   }
 
   return (
@@ -87,21 +99,32 @@ export default async function DashboardPage({
           {/* Tarjeta de productos */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-primary-900">Mis Publicaciones</CardTitle>
-              <CardDescription>
-                {activeConnection ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span>Productos de la cuenta {(activeConnection as any).meli_nickname || (activeConnection as any).meli_email || activeConnection.meli_user_id}</span>
-                    {activeConnection.status === 'connected' ? (
-                      <Badge variant="success">✓ Conectada - Puede sincronizar</Badge>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-primary-900">Mis Publicaciones</CardTitle>
+                  <CardDescription>
+                    {activeConnection ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>Productos de la cuenta {(activeConnection as any).meli_nickname || (activeConnection as any).meli_email || activeConnection.meli_user_id}</span>
+                        {activeConnection.status === 'connected' ? (
+                          <Badge variant="success">✓ Conectada - Puede sincronizar</Badge>
+                        ) : (
+                          <Badge variant="secondary">○ Desconectada - Solo históricos</Badge>
+                        )}
+                      </div>
                     ) : (
-                      <Badge variant="secondary">○ Desconectada - Solo históricos</Badge>
+                      'Tus publicaciones de MercadoLibre aparecerán aquí'
                     )}
-                  </div>
-                ) : (
-                  'Tus publicaciones de MercadoLibre aparecerán aquí'
-                )}
-              </CardDescription>
+                  </CardDescription>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  {productsWithAnalysis > 0 && <ExportAnalysisButton />}
+                  {/* Debug info */}
+                  <span className="text-xs text-neutral-500">
+                    {productsWithAnalysis > 0 ? `${productsWithAnalysis} con análisis IA` : 'Ningún análisis guardado'}
+                  </span>
+                </div>
+              </div>
             </CardHeader>
           <CardContent>
             {products.length === 0 ? (

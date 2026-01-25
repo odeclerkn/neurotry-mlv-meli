@@ -26,14 +26,21 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [aiProvider, setAiProvider] = useState<string>('')
+  const [analyzedAt, setAnalyzedAt] = useState<string>('')
 
   useEffect(() => {
     if (isOpen && product) {
+      // Resetear estados al abrir el modal
+      setAnalysis(null)
+      setAiProvider('')
+      setAnalyzedAt('')
+
       if (product.category_id) {
         fetchKeywords()
       }
       if (product.meli_product_id) {
         fetchCompetitors()
+        fetchSavedAnalysis()
       }
     }
   }, [isOpen, product])
@@ -85,6 +92,38 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       console.error('Error fetching competitors:', error)
     } finally {
       setLoadingCompetitors(false)
+    }
+  }
+
+  const fetchSavedAnalysis = async () => {
+    if (!product?.meli_product_id) {
+      console.log('⚠️ No meli_product_id, skipping fetchSavedAnalysis')
+      return
+    }
+
+    const url = `/api/meli/analyze-listing?product_id=${product.meli_product_id}`
+    console.log('🔵 Buscando análisis guardado en:', url)
+
+    try {
+      const response = await fetch(url)
+      console.log('🔵 Response status:', response.status, response.statusText)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🟢 Análisis guardado encontrado:', data)
+        if (data.hasAnalysis) {
+          setAnalysis(data.analysis)
+          setAiProvider(data.provider || 'unknown')
+          setAnalyzedAt(data.analyzedAt || '')
+        } else {
+          console.log('ℹ️ No hay análisis guardado para este producto')
+        }
+      } else {
+        const errorText = await response.text()
+        console.error('🔴 Error fetching saved analysis:', response.status, errorText)
+      }
+    } catch (error) {
+      console.error('🔴 Error fetching saved analysis:', error)
     }
   }
 
@@ -247,30 +286,45 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           {/* Keywords Trending */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-sans font-semibold text-primary-900">
-                Keywords Trending de la Categoría
-              </h4>
               <div className="flex items-center gap-2">
+                <h4 className="text-lg font-sans font-semibold text-primary-900">
+                  Keywords Trending de la Categoría
+                </h4>
                 {keywordsSource && keywords.length > 0 && (
                   <Badge variant="info" className="text-xs">
-                    {keywordsSource === 'trends' ? 'De API Trends' : 'De productos más vendidos'}
+                    {keywordsSource === 'trends' ? 'API Trends' : 'Top Vendidos'}
                   </Badge>
                 )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 {aiProvider && analysis && (
-                  <Badge variant="success" className="text-xs">
-                    {aiProvider === 'anthropic' && '🤖 Analizado con Claude'}
-                    {aiProvider === 'openai' && '🤖 Analizado con GPT-4'}
-                    {aiProvider === 'gemini' && '🤖 Analizado con Gemini'}
-                    {aiProvider === 'basic' && '📊 Análisis Básico'}
-                  </Badge>
+                  <>
+                    <Badge variant="success" className="text-xs">
+                      {aiProvider === 'anthropic' && '🤖 Analizado con Claude'}
+                      {aiProvider === 'openai' && '🤖 Analizado con GPT-4'}
+                      {aiProvider === 'gemini' && '🤖 Analizado con Gemini'}
+                      {aiProvider === 'basic' && '📊 Análisis Básico'}
+                    </Badge>
+                    {analyzedAt && (
+                      <span className="text-xs text-neutral-500">
+                        {new Date(analyzedAt).toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                  </>
                 )}
-                {keywords.length > 0 && !analysis && (
+                {keywords.length > 0 && (
                   <button
                     onClick={fetchAnalysis}
                     disabled={loadingAnalysis}
                     className="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 transition-colors"
                   >
-                    {loadingAnalysis ? 'Analizando...' : '🤖 Analizar con IA'}
+                    {loadingAnalysis ? 'Analizando...' : (analysis ? '🔄 Re-analizar con IA' : '🤖 Analizar con IA')}
                   </button>
                 )}
               </div>
