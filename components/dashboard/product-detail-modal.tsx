@@ -57,6 +57,18 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     }
   }
 
+  // Función para verificar si un keyword está presente en título o descripción
+  const isKeywordUsed = (keyword: string): boolean => {
+    if (!product) return false
+
+    const normalizedKeyword = keyword.toLowerCase().trim()
+    const title = (product.title || '').toLowerCase()
+    const description = (product.description || '').toLowerCase()
+
+    // Buscar el keyword completo o como parte de una palabra
+    return title.includes(normalizedKeyword) || description.includes(normalizedKeyword)
+  }
+
   if (!product) return null
 
   return (
@@ -194,31 +206,56 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               </div>
             ) && (
               <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-xs font-body text-neutral-600">Utilizado en la publicación</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className="text-xs font-body text-neutral-600">No utilizado</span>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {keywords.map((kw, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200 hover:border-primary-300 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-sans font-bold text-sm">
-                          {index + 1}
+                  {keywords.map((kw, index) => {
+                    const isUsed = isKeywordUsed(kw.keyword)
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between bg-white p-3 rounded-lg border transition-colors ${
+                          isUsed
+                            ? 'border-green-200 hover:border-green-300'
+                            : 'border-red-200 hover:border-red-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-sans font-bold text-sm">
+                            {index + 1}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-3 h-3 rounded-full ${
+                                isUsed ? 'bg-green-500' : 'bg-red-500'
+                              }`}
+                              title={isUsed ? 'Keyword utilizado en título o descripción' : 'Keyword no utilizado - considere agregarlo'}
+                            ></div>
+                            <span className="font-body text-sm text-neutral-900">
+                              {kw.keyword}
+                            </span>
+                          </div>
                         </div>
-                        <span className="font-body text-sm text-neutral-900">
-                          {kw.keyword}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <div className="text-xs font-body text-neutral-600">
-                          {keywordsSource === 'products' ? (
-                            <span>{kw.searches} menciones</span>
-                          ) : (
-                            <span className="text-primary-700 font-semibold">Trending</span>
-                          )}
+                        <div className="flex flex-col items-end">
+                          <div className="text-xs font-body text-neutral-600">
+                            {keywordsSource === 'products' ? (
+                              <span>{kw.searches} menciones</span>
+                            ) : (
+                              <span className="text-primary-700 font-semibold">Trending</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             ) : (
