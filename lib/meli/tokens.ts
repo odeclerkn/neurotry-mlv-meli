@@ -10,6 +10,10 @@ export interface MeliConnection {
   is_active: boolean
   status: 'connected' | 'disconnected'
   site_id: string
+  meli_nickname?: string | null
+  meli_email?: string | null
+  meli_first_name?: string | null
+  meli_last_name?: string | null
   created_at: string
   updated_at: string
 }
@@ -41,7 +45,11 @@ export async function saveMeliConnection({
   accessToken,
   refreshToken,
   expiresIn,
-  siteId = 'MLA'
+  siteId = 'MLA',
+  meliNickname,
+  meliEmail,
+  meliFirstName,
+  meliLastName
 }: {
   userId: string
   meliUserId: string
@@ -49,6 +57,10 @@ export async function saveMeliConnection({
   refreshToken: string
   expiresIn: number
   siteId?: string
+  meliNickname?: string
+  meliEmail?: string
+  meliFirstName?: string
+  meliLastName?: string
 }) {
   const supabase = await createClient()
 
@@ -72,6 +84,10 @@ export async function saveMeliConnection({
       is_active: true,
       status: 'connected',
       site_id: siteId,
+      meli_nickname: meliNickname,
+      meli_email: meliEmail,
+      meli_first_name: meliFirstName,
+      meli_last_name: meliLastName,
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'user_id,meli_user_id'

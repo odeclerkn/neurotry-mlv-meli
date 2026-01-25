@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +20,10 @@ interface MeliConnection {
   meli_user_id: string
   is_active: boolean
   status: 'connected' | 'disconnected'
+  meli_nickname?: string | null
+  meli_email?: string | null
+  meli_first_name?: string | null
+  meli_last_name?: string | null
   created_at: string
 }
 
@@ -27,6 +32,7 @@ interface MeliConnectButtonProps {
 }
 
 export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -173,10 +179,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         }
 
         setSuccessMessage(`Neurotry: Sincronizados ${data.count} productos correctamente`)
-        // Redirigir a URL limpia después de mostrar mensaje
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 2000)
+        setLoading(null)
+        // Refrescar los datos sin recargar la página completa
+        router.refresh()
       } else {
         const data = await response.json()
         setErrorMessage(`Neurotry: ${data.error || 'Error al sincronizar productos de MercadoLibre'}`)
@@ -203,7 +208,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                 <span className="text-2xl">💡</span>
                 <div className="flex-1">
                   <p className="text-blue-900 font-sans font-semibold mb-2">
-                    Cuentas conectadas: {connections.filter(c => c.status === 'connected').map(c => c.meli_user_id).join(', ') || 'Ninguna'}
+                    Cuentas conectadas: {connections.filter(c => c.status === 'connected').map(c => c.meli_nickname || c.meli_email || `ID: ${c.meli_user_id}`).join(', ') || 'Ninguna'}
                   </p>
                   <p className="text-blue-800 font-body mb-3">
                     Para conectar una cuenta <strong>diferente</strong>:
@@ -277,13 +282,20 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-sans font-semibold text-neutral-900">ID: {connection.meli_user_id}</span>
+                          <span className="font-sans font-semibold text-neutral-900">
+                            {connection.meli_nickname || connection.meli_email || `ID: ${connection.meli_user_id}`}
+                          </span>
                           {connection.is_active && (
                             <Badge variant="info">
                               Activa
                             </Badge>
                           )}
                         </div>
+                        {connection.meli_nickname && connection.meli_email && (
+                          <span className="text-xs font-body text-neutral-500">
+                            {connection.meli_email}
+                          </span>
+                        )}
                         <div className="flex items-center gap-2 text-sm flex-wrap">
                           {connection.status === 'connected' ? (
                             <div className="flex items-center gap-2">

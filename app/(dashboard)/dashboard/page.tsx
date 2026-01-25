@@ -90,7 +90,7 @@ export default async function DashboardPage({
               <CardDescription>
                 {activeConnection ? (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span>Productos de la cuenta {activeConnection.meli_user_id}</span>
+                    <span>Productos de la cuenta {(activeConnection as any).meli_nickname || (activeConnection as any).meli_email || activeConnection.meli_user_id}</span>
                     {activeConnection.status === 'connected' ? (
                       <Badge variant="success">✓ Conectada - Puede sincronizar</Badge>
                     ) : (
@@ -124,47 +124,66 @@ export default async function DashboardPage({
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="border-2 border-neutral-200 rounded-xl overflow-hidden hover:shadow-xl hover:border-primary-300 transition-all duration-200 bg-white"
-                  >
-                    {product.thumbnail && (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.title}
-                        className="w-full h-48 object-cover"
-                      />
-                    )}
-                    <div className="p-5">
-                      <h3 className="font-sans font-semibold text-sm mb-3 line-clamp-2 text-neutral-900">
-                        {product.title}
-                      </h3>
-                      <div className="flex justify-between items-center text-sm mb-2">
-                        <span className="font-sans font-bold text-lg text-success">
-                          ${product.price?.toLocaleString('es-MX')}
-                        </span>
-                        <span className="font-body text-neutral-600">
-                          Stock: {product.available_quantity}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-xs font-body text-neutral-500">
-                        Vendidos: {product.sold_quantity || 0}
-                      </div>
-                      {product.status && (
-                        <div className="mt-3">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-neutral-200 bg-neutral-50">
+                      <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700"></th>
+                      <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700">Título</th>
+                      <th className="text-right p-3 font-sans font-semibold text-sm text-neutral-700">Precio</th>
+                      <th className="text-center p-3 font-sans font-semibold text-sm text-neutral-700">Stock</th>
+                      <th className="text-center p-3 font-sans font-semibold text-sm text-neutral-700">Vendidos</th>
+                      <th className="text-center p-3 font-sans font-semibold text-sm text-neutral-700">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product, index) => (
+                      <tr
+                        key={product.id}
+                        className={`border-b border-neutral-200 hover:bg-primary-50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'
+                        }`}
+                      >
+                        <td className="p-3 w-20">
+                          {product.thumbnail && (
+                            <img
+                              src={product.thumbnail}
+                              alt={product.title}
+                              className="w-16 h-16 object-cover rounded-lg border border-neutral-200"
+                            />
+                          )}
+                        </td>
+                        <td className="p-3 font-body text-sm text-neutral-900 max-w-md">
+                          <a
+                            href={product.permalink || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-primary-700 hover:underline"
+                          >
+                            {product.title}
+                          </a>
+                        </td>
+                        <td className="p-3 text-right font-sans font-bold text-success whitespace-nowrap">
+                          ${product.price?.toLocaleString('es-AR')}
+                        </td>
+                        <td className="p-3 text-center font-body text-neutral-700">
+                          {product.available_quantity}
+                        </td>
+                        <td className="p-3 text-center font-body text-neutral-700">
+                          {product.sold_quantity || 0}
+                        </td>
+                        <td className="p-3 text-center">
                           <Badge
                             variant={product.status === 'active' ? 'success' : 'secondary'}
                             className="text-xs"
                           >
                             {product.status}
                           </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

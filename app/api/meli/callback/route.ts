@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { exchangeCodeForTokens } from '@/lib/meli/client'
+import { exchangeCodeForTokens, getMeliUserInfo } from '@/lib/meli/client'
 import { saveMeliConnection } from '@/lib/meli/tokens'
 
 export async function GET(request: NextRequest) {
@@ -88,6 +88,22 @@ export async function GET(request: NextRequest) {
     console.log('- Access Token:', accessToken ? 'PRESENTE' : 'FALTANTE')
     console.log('- Refresh Token:', refreshToken ? 'PRESENTE' : 'FALTANTE')
 
+    // Obtener información del usuario de MercadoLibre
+    console.log('Obteniendo información del usuario de MELI...')
+    let meliUserInfo: any = {}
+    try {
+      meliUserInfo = await getMeliUserInfo(accessToken)
+      console.log('Información del usuario obtenida:', {
+        nickname: meliUserInfo.nickname,
+        email: meliUserInfo.email,
+        first_name: meliUserInfo.first_name,
+        last_name: meliUserInfo.last_name
+      })
+    } catch (error) {
+      console.error('Error obteniendo info del usuario MELI:', error)
+      // Continuar sin la información adicional
+    }
+
     // Verificar si esta cuenta ya existe para este usuario
     const { data: existingConnection } = await supabase
       .from('meli_connections')
@@ -119,7 +135,11 @@ export async function GET(request: NextRequest) {
       accessToken,
       refreshToken,
       expiresIn,
-      siteId: 'MLA' // Argentina
+      siteId: 'MLA', // Argentina
+      meliNickname: meliUserInfo.nickname,
+      meliEmail: meliUserInfo.email,
+      meliFirstName: meliUserInfo.first_name,
+      meliLastName: meliUserInfo.last_name
     })
 
     console.log('Conexión guardada exitosamente')
