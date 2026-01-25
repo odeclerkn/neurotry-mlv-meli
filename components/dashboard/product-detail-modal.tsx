@@ -29,17 +29,26 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   }, [isOpen, product])
 
   const fetchKeywords = async () => {
-    if (!product?.category_id) return
+    if (!product?.category_id) {
+      console.log('No category_id en producto:', product)
+      return
+    }
 
+    console.log('Fetching keywords para categoría:', product.category_id)
     setLoadingKeywords(true)
     setKeywords([])
     setKeywordsSource('')
     try {
       const response = await fetch(`/api/meli/trending-keywords?category_id=${product.category_id}`)
+      console.log('Response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('Keywords recibidos:', data)
         setKeywords(data.keywords || [])
         setKeywordsSource(data.source || '')
+      } else {
+        console.error('Response no OK:', response.status)
       }
     } catch (error) {
       console.error('Error fetching keywords:', error)
@@ -178,6 +187,12 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                 </AlertDescription>
               </Alert>
             ) : keywords.length > 0 ? (
+              <div className="mb-2">
+                <p className="text-xs font-body text-neutral-500">
+                  Categoría: {product.category_id}
+                </p>
+              </div>
+            ) && (
               <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {keywords.map((kw, index) => (
@@ -209,7 +224,15 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             ) : (
               <Alert variant="info">
                 <AlertDescription>
-                  No se encontraron keywords trending para esta categoría.
+                  <div>
+                    <p className="mb-2">No se encontraron keywords trending para esta categoría.</p>
+                    <p className="text-xs text-neutral-600">
+                      Categoría: {product.category_id || 'Sin categoría'}
+                    </p>
+                    {!product.category_id && (
+                      <p className="text-xs text-red-600 mt-1">⚠️ El producto no tiene category_id</p>
+                    )}
+                  </div>
                 </AlertDescription>
               </Alert>
             )}

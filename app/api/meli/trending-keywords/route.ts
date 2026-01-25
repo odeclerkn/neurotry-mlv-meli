@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { getActiveMeliConnection } from '@/lib/meli/tokens'
+import { getValidAccessToken } from '@/lib/meli/client'
 
 const MELI_API_URL = 'https://api.mercadolibre.com'
 
@@ -14,24 +17,50 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Obtener access token de la conexión activa
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const activeConnection = await getActiveMeliConnection(user.id)
+    if (!activeConnection) {
+      return NextResponse.json(
+        { error: 'No active MELI connection' },
+        { status: 404 }
+      )
+    }
+
+    const accessToken = await getValidAccessToken(activeConnection.id)
+
+    console.log(`========================================`)
     console.log(`Buscando keywords trending para categoría: ${categoryId}`)
+    console.log(`URL trends: ${MELI_API_URL}/trends/MLA/${categoryId}`)
 
     // Intento 1: Usar endpoint de trends
     let keywords: any[] = []
 
     try {
-      const trendsResponse = await fetch(
-        `${MELI_API_URL}/trends/MLA/${categoryId}`,
-        {
-          headers: {
-            'Accept': 'application/json'
-          }
+      const trendsUrl = `${MELI_API_URL}/trends/MLA/${categoryId}`
+      console.log(`Llamando a: ${trendsUrl}`)
+
+      const trendsResponse = await fetch(trendsUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         }
-      )
+      })
+
+      console.log(`Trends response status: ${trendsResponse.status}`)
 
       if (trendsResponse.ok) {
         const trendsData = await trendsResponse.json()
-        console.log('Respuesta de trends:', trendsData)
+        console.log('Respuesta de trends:', JSON.stringify(trendsData, null, 2))
 
         // El endpoint de trends devuelve un array de objetos con keyword y url
         if (Array.isArray(trendsData)) {
@@ -53,19 +82,25 @@ export async function GET(request: NextRequest) {
 
     // Intento 2: Si no hay keywords, buscar en "hot items" de la categoría
     if (keywords.length === 0) {
+      console.log('No hay keywords de trends, intentando con productos más vendidos...')
+
       try {
-        const searchResponse = await fetch(
-          `${MELI_API_URL}/sites/MLA/search?category=${categoryId}&limit=50&sort=sold_quantity_desc`,
-          {
-            headers: {
-              'Accept': 'application/json'
-            }
+        const searchUrl = `${MELI_API_URL}/sites/MLA/search?category=${categoryId}&limit=50&sort=sold_quantity_desc`
+        console.log(`Llamando a: ${searchUrl}`)
+
+        const searchResponse = await fetch(searchUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
           }
-        )
+        })
+
+        console.log(`Search response status: ${searchResponse.status}`)
 
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
           console.log(`Encontrados ${searchData.results?.length || 0} productos en la categoría`)
+          console.log('Primeros 3 títulos:', searchData.results?.slice(0, 3).map((r: any) => r.title))
 
           // Extraer keywords de los títulos de productos más vendidos
           const titleWords = new Map<string, number>()
@@ -100,11 +135,15 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Retornando ${keywords.length} keywords`)
+    if (keywords.length > 0) {
+      console.log('Top 5 keywords:', keywords.slice(0, 5).map(k => k.keyword))
+    }
+    console.log(`========================================`)
 
     return NextResponse.json({
       keywords,
       category_id: categoryId,
-      source: keywords.length > 0 ? (keywords[0].url.includes('trends') ? 'trends' : 'products') : 'none'
+      source: keywords.length > 0 ? (keywords[0].url?.includes('trends') ? 'trends' : 'products') : 'none'
     })
   } catch (error) {
     console.error('Error in /api/meli/trending-keywords:', error)
