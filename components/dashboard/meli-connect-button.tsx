@@ -69,8 +69,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        // Redirigir a URL limpia sin query params
-        window.location.href = '/dashboard'
+        setLoading(null)
+        setSuccessMessage('Neurotry: Cuenta desconectada exitosamente')
+        router.refresh()
       } else {
         setErrorMessage('Neurotry: Error al desconectar la cuenta de MercadoLibre')
         setLoading(null)
@@ -104,8 +105,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        // Redirigir a URL limpia sin query params
-        window.location.href = '/dashboard'
+        setLoading(null)
+        setSuccessMessage('Neurotry: Cuenta eliminada exitosamente')
+        router.refresh()
       } else {
         setErrorMessage('Neurotry: Error al eliminar la cuenta de MercadoLibre')
         setLoading(null)
@@ -136,8 +138,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
       })
 
       if (response.ok) {
-        // Redirigir a URL limpia sin query params
-        window.location.href = '/dashboard'
+        setLoading(null)
+        setSuccessMessage('Neurotry: Cuenta activada exitosamente')
+        router.refresh()
       } else {
         const data = await response.json()
         setErrorMessage(`Neurotry: ${data.error || 'Error al cambiar de cuenta de MercadoLibre'}`)

@@ -31,6 +31,10 @@ export interface MeliProduct {
   thumbnail: string | null
   category_id: string | null
   listing_type_id: string | null
+  description: string | null
+  is_new: boolean
+  is_updated: boolean
+  last_sync_at: string | null
   raw_data: any
   created_at: string
   updated_at: string
@@ -282,7 +286,7 @@ export async function deleteMeliConnection(connectionId: string, userId: string)
 }
 
 /**
- * Guarda o actualiza productos de una conexión
+ * Guarda o actualiza productos de una conexión con detección de cambios
  */
 export async function saveMeliProducts(connectionId: string, products: any[]) {
   // Si no hay productos, retornar array vacío sin intentar guardar
@@ -292,22 +296,60 @@ export async function saveMeliProducts(connectionId: string, products: any[]) {
   }
 
   const supabase = await createClient()
+  const now = new Date().toISOString()
 
-  const productsData = products.map(product => ({
-    connection_id: connectionId,
-    meli_product_id: product.id,
-    title: product.title,
-    price: product.price,
-    available_quantity: product.available_quantity,
-    sold_quantity: product.sold_quantity,
-    status: product.status,
-    permalink: product.permalink,
-    thumbnail: product.thumbnail,
-    category_id: product.category_id,
-    listing_type_id: product.listing_type_id,
-    raw_data: product,
-    updated_at: new Date().toISOString()
-  }))
+  // Primero, marcar todos los productos existentes como no nuevos/no actualizados
+  await supabase
+    .from('meli_products')
+    .update({ is_new: false, is_updated: false })
+    .eq('connection_id', connectionId)
+
+  // Obtener productos existentes para comparar
+  const { data: existingProducts } = await supabase
+    .from('meli_products')
+    .select('*')
+    .eq('connection_id', connectionId)
+
+  const existingMap = new Map(
+    (existingProducts || []).map(p => [p.meli_product_id, p])
+  )
+
+  // Preparar datos con detección de cambios
+  const productsData = products.map(product => {
+    const existing = existingMap.get(product.id)
+    const isNew = !existing
+
+    let isUpdated = false
+    if (existing && !isNew) {
+      // Detectar cambios en campos importantes
+      isUpdated =
+        existing.title !== product.title ||
+        existing.price !== product.price ||
+        existing.available_quantity !== product.available_quantity ||
+        existing.sold_quantity !== product.sold_quantity ||
+        existing.status !== product.status
+    }
+
+    return {
+      connection_id: connectionId,
+      meli_product_id: product.id,
+      title: product.title,
+      price: product.price,
+      available_quantity: product.available_quantity,
+      sold_quantity: product.sold_quantity,
+      status: product.status,
+      permalink: product.permalink,
+      thumbnail: product.thumbnail,
+      category_id: product.category_id,
+      listing_type_id: product.listing_type_id,
+      description: product.descriptions?.plain_text || product.subtitle || null,
+      is_new: isNew,
+      is_updated: isUpdated,
+      last_sync_at: now,
+      raw_data: product,
+      updated_at: now
+    }
+  })
 
   const { data, error } = await supabase
     .from('meli_products')
