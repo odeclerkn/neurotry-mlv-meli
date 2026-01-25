@@ -322,12 +322,14 @@ export async function saveMeliProducts(connectionId: string, products: any[]) {
     let isUpdated = false
     if (existing && !isNew) {
       // Detectar cambios en campos importantes
+      const newDescription = product.description || product.subtitle || null
       isUpdated =
         existing.title !== product.title ||
         existing.price !== product.price ||
         existing.available_quantity !== product.available_quantity ||
         existing.sold_quantity !== product.sold_quantity ||
-        existing.status !== product.status
+        existing.status !== product.status ||
+        existing.description !== newDescription
     }
 
     return {
@@ -342,7 +344,7 @@ export async function saveMeliProducts(connectionId: string, products: any[]) {
       thumbnail: product.thumbnail,
       category_id: product.category_id,
       listing_type_id: product.listing_type_id,
-      description: product.descriptions?.plain_text || product.subtitle || null,
+      description: product.description || product.subtitle || null,
       is_new: isNew,
       is_updated: isUpdated,
       last_sync_at: now,
@@ -363,7 +365,19 @@ export async function saveMeliProducts(connectionId: string, products: any[]) {
     throw error
   }
 
-  return data as MeliProduct[]
+  // Contar nuevos y actualizados
+  const newCount = productsData.filter(p => p.is_new).length
+  const updatedCount = productsData.filter(p => p.is_updated).length
+
+  return {
+    products: data as MeliProduct[],
+    stats: {
+      total: productsData.length,
+      newCount,
+      updatedCount,
+      changedCount: newCount + updatedCount
+    }
+  }
 }
 
 /**

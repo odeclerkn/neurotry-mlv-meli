@@ -53,11 +53,14 @@ export async function POST(request: NextRequest) {
     const products = await syncMeliProducts(finalConnectionId)
 
     // Guardar productos en la base de datos
-    await saveMeliProducts(finalConnectionId, products)
+    const result = await saveMeliProducts(finalConnectionId, products)
 
     return NextResponse.json({
       success: true,
-      count: products.length
+      count: products.length,
+      newCount: result.stats.newCount,
+      updatedCount: result.stats.updatedCount,
+      changedCount: result.stats.changedCount
     })
   } catch (error) {
     console.error('Error in /api/meli/sync-products:', error)

@@ -181,7 +181,14 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
           return
         }
 
-        setSuccessMessage(`Neurotry: Sincronizados ${data.count} productos correctamente`)
+        if (data.changedCount === 0) {
+          setSuccessMessage(`Neurotry: Sincronización completa. No hay cambios en las publicaciones.`)
+        } else {
+          const parts = []
+          if (data.newCount > 0) parts.push(`${data.newCount} nuevos`)
+          if (data.updatedCount > 0) parts.push(`${data.updatedCount} actualizados`)
+          setSuccessMessage(`Neurotry: ${parts.join(' y ')} (${data.count} productos totales)`)
+        }
         setLoading(null)
         // Refrescar los datos sin recargar la página completa
         router.refresh()

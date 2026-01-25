@@ -291,6 +291,32 @@ export async function getMeliItemsDetails(itemIds: string[], accessToken: string
 }
 
 /**
+ * Obtiene la descripción de un producto
+ */
+export async function getMeliItemDescription(itemId: string, accessToken: string) {
+  try {
+    const response = await fetch(
+      `${MELI_API_URL}/items/${itemId}/description`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    )
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+    return data.plain_text || data.text || null
+  } catch (error) {
+    console.error(`Error getting description for item ${itemId}:`, error)
+    return null
+  }
+}
+
+/**
  * Sincroniza los productos de una conexión
  */
 export async function syncMeliProducts(connectionId: string) {
@@ -307,6 +333,19 @@ export async function syncMeliProducts(connectionId: string) {
 
   // Obtener detalles de productos
   const items = await getMeliItemsDetails(itemIds, accessToken)
+
+  // Obtener descripciones de productos (en paralelo, máximo 5 a la vez)
+  console.log(`Obteniendo descripciones de ${items.length} productos...`)
+  for (let i = 0; i < items.length; i += 5) {
+    const chunk = items.slice(i, i + 5)
+    const descriptions = await Promise.all(
+      chunk.map(item => getMeliItemDescription(item.id, accessToken))
+    )
+
+    chunk.forEach((item, idx) => {
+      item.description = descriptions[idx]
+    })
+  }
 
   return items
 }
