@@ -25,6 +25,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const [loadingCompetitors, setLoadingCompetitors] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
+  const [aiProvider, setAiProvider] = useState<string>('')
 
   useEffect(() => {
     if (isOpen && product) {
@@ -106,6 +107,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         const data = await response.json()
         console.log('Análisis recibido:', data)
         setAnalysis(data.analysis)
+        setAiProvider(data.provider || 'unknown')
       } else {
         console.error('Error en análisis:', response.status)
       }
@@ -252,6 +254,14 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                 {keywordsSource && keywords.length > 0 && (
                   <Badge variant="info" className="text-xs">
                     {keywordsSource === 'trends' ? 'De API Trends' : 'De productos más vendidos'}
+                  </Badge>
+                )}
+                {aiProvider && analysis && (
+                  <Badge variant="success" className="text-xs">
+                    {aiProvider === 'anthropic' && '🤖 Analizado con Claude'}
+                    {aiProvider === 'openai' && '🤖 Analizado con GPT-4'}
+                    {aiProvider === 'gemini' && '🤖 Analizado con Gemini'}
+                    {aiProvider === 'basic' && '📊 Análisis Básico'}
                   </Badge>
                 )}
                 {keywords.length > 0 && !analysis && (

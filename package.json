@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
@@ -20,6 +21,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
     "next": "14.2.18",
+    "openai": "^6.16.0",
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^3.4.0",
