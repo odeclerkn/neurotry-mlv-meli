@@ -3,6 +3,13 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
+async function signOut() {
+  'use server'
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -16,19 +23,19 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-light">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b-2 border-primary-200 shadow-md">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-                MLP Optimizador
+              <Link href="/dashboard" className="text-xl font-sans font-bold text-primary-900 hover:text-primary-700 transition-colors">
+                Neurotry - Optimizador de publicaciones MELI
               </Link>
               <nav className="hidden md:flex space-x-4">
                 <Link
                   href="/dashboard"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  className="font-body text-neutral-700 hover:text-primary-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors"
                 >
                   Dashboard
                 </Link>
@@ -36,10 +43,10 @@ export default async function DashboardLayout({
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm font-body text-neutral-700">
                 {user.email}
               </span>
-              <form action="/api/auth/signout" method="post">
+              <form action={signOut}>
                 <Button variant="outline" size="sm" type="submit">
                   Cerrar Sesión
                 </Button>

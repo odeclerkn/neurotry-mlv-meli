@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useRouter } from 'next/navigation'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface MeliConnection {
   id: string
@@ -19,8 +19,9 @@ interface MeliConnectButtonProps {
 }
 
 export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
-  const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const activeConnection = connections.find(c => c.is_active)
 
@@ -35,6 +36,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
     }
 
     setLoading(connectionId)
+    setErrorMessage(null)
 
     try {
       const response = await fetch('/api/meli/disconnect', {
@@ -49,12 +51,12 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         // Redirigir a URL limpia sin query params
         window.location.href = '/dashboard'
       } else {
-        alert('Error al desconectar la cuenta')
+        setErrorMessage('Neurotry: Error al desconectar la cuenta de MercadoLibre')
         setLoading(null)
       }
     } catch (error) {
       console.error('Error disconnecting:', error)
-      alert('Error al desconectar la cuenta')
+      setErrorMessage('Neurotry: Error al desconectar la cuenta de MercadoLibre')
       setLoading(null)
     }
   }
@@ -65,6 +67,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
     }
 
     setLoading(`delete-${connectionId}`)
+    setErrorMessage(null)
 
     try {
       const response = await fetch('/api/meli/delete', {
@@ -79,12 +82,12 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         // Redirigir a URL limpia sin query params
         window.location.href = '/dashboard'
       } else {
-        alert('Error al eliminar la cuenta')
+        setErrorMessage('Neurotry: Error al eliminar la cuenta de MercadoLibre')
         setLoading(null)
       }
     } catch (error) {
       console.error('Error deleting:', error)
-      alert('Error al eliminar la cuenta')
+      setErrorMessage('Neurotry: Error al eliminar la cuenta de MercadoLibre')
       setLoading(null)
     }
   }
@@ -96,6 +99,7 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
 
   const handleSwitch = async (connectionId: string) => {
     setLoading(connectionId)
+    setErrorMessage(null)
 
     try {
       const response = await fetch('/api/meli/switch', {
@@ -111,23 +115,25 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         window.location.href = '/dashboard'
       } else {
         const data = await response.json()
-        alert(data.error || 'Error al cambiar de cuenta')
+        setErrorMessage(`Neurotry: ${data.error || 'Error al cambiar de cuenta de MercadoLibre'}`)
         setLoading(null)
       }
     } catch (error) {
       console.error('Error switching:', error)
-      alert('Error al cambiar de cuenta')
+      setErrorMessage('Neurotry: Error al cambiar de cuenta de MercadoLibre')
       setLoading(null)
     }
   }
 
   const handleSyncProducts = async () => {
     if (!activeConnection) {
-      alert('No hay cuenta activa')
+      setErrorMessage('Neurotry: No hay cuenta activa de MercadoLibre')
       return
     }
 
     setLoading('sync')
+    setErrorMessage(null)
+    setSuccessMessage(null)
 
     try {
       const response = await fetch('/api/meli/sync-products', {
@@ -142,22 +148,24 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
         const data = await response.json()
 
         if (data.count === 0) {
-          alert('No se encontraron productos activos en tu cuenta de MercadoLibre')
+          setErrorMessage('Neurotry: No se encontraron productos activos en tu cuenta de MercadoLibre')
           setLoading(null)
           return
         }
 
-        alert(`Sincronizados ${data.count} productos correctamente`)
-        // Redirigir a URL limpia
-        window.location.href = '/dashboard'
+        setSuccessMessage(`Neurotry: Sincronizados ${data.count} productos correctamente`)
+        // Redirigir a URL limpia después de mostrar mensaje
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 2000)
       } else {
         const data = await response.json()
-        alert(data.error || 'Error al sincronizar productos')
+        setErrorMessage(`Neurotry: ${data.error || 'Error al sincronizar productos de MercadoLibre'}`)
         setLoading(null)
       }
     } catch (error) {
       console.error('Error syncing products:', error)
-      alert('Error al sincronizar productos')
+      setErrorMessage('Neurotry: Error al sincronizar productos de MercadoLibre')
       setLoading(null)
     }
   }
@@ -165,23 +173,23 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Conexión con MercadoLibre</CardTitle>
+        <CardTitle className="text-primary-900">Conexión con MercadoLibre</CardTitle>
         <CardDescription>
           Conecta tu cuenta de MercadoLibre para sincronizar tus productos
         </CardDescription>
         {connections.length > 0 && (
-          <div className="mt-2 space-y-2">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs">
-              <div className="flex items-start gap-2">
-                <span className="text-lg">💡</span>
+          <div className="mt-4 space-y-3">
+            <div className="p-4 bg-info-light border-l-4 border-l-info rounded-lg text-sm shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💡</span>
                 <div className="flex-1">
-                  <p className="text-blue-900 font-semibold mb-1">
+                  <p className="text-blue-900 font-sans font-semibold mb-2">
                     Cuentas conectadas: {connections.filter(c => c.status === 'connected').map(c => c.meli_user_id).join(', ') || 'Ninguna'}
                   </p>
-                  <p className="text-blue-800 mb-2">
+                  <p className="text-blue-800 font-body mb-3">
                     Para conectar una cuenta <strong>diferente</strong>:
                   </p>
-                  <ol className="text-blue-800 space-y-1 mb-2 ml-4 list-decimal">
+                  <ol className="text-blue-800 font-body space-y-1.5 mb-3 ml-5 list-decimal">
                     <li>Abre MercadoLibre en otra pestaña</li>
                     <li>Click en tu nombre (arriba a la derecha)</li>
                     <li>Click en "Salir"</li>
@@ -191,66 +199,86 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => window.open('https://www.mercadolibre.com.ar', '_blank')}
-                    className="text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
                   >
                     🔗 Abrir MercadoLibre
                   </Button>
                 </div>
               </div>
             </div>
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-xs">
-              <p className="text-gray-700 font-semibold mb-1">Estados de cuenta:</p>
-              <ul className="space-y-1 text-gray-600">
-                <li><Badge className="bg-green-500 text-white mr-2">✓ Conectada</Badge> = Tiene tokens válidos de API. Puede sincronizar productos.</li>
-                <li><Badge variant="secondary" className="bg-gray-400 mr-2">○ Desconectada</Badge> = Tokens invalidados. Solo muestra productos históricos. Click "Reconectar" para volver a sincronizar.</li>
+            <div className="p-4 bg-neutral-50 border-l-4 border-l-neutral-400 rounded-lg text-sm shadow-sm">
+              <p className="text-neutral-900 font-sans font-semibold mb-2">Estados de cuenta:</p>
+              <ul className="space-y-2 font-body text-neutral-700">
+                <li className="flex items-start gap-2">
+                  <Badge variant="success" className="mt-0.5">✓ Conectada</Badge>
+                  <span>Tiene tokens válidos de API. Puede sincronizar productos.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Badge variant="secondary" className="mt-0.5">○ Desconectada</Badge>
+                  <span>Tokens invalidados. Solo muestra productos históricos. Click "Reconectar" para volver a sincronizar.</span>
+                </li>
               </ul>
             </div>
           </div>
         )}
       </CardHeader>
       <CardContent>
+        {/* Mensajes de error y éxito */}
+        {errorMessage && (
+          <Alert variant="error" className="mb-4">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+        {successMessage && (
+          <Alert variant="success" className="mb-4">
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-4">
           {connections.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-gray-600 mb-4">
+            <div className="text-center py-10">
+              <p className="font-body text-neutral-600 mb-6 text-lg">
                 No tienes ninguna cuenta de MercadoLibre conectada
               </p>
-              <Button onClick={handleConnect} className="bg-[#FFE600] text-black hover:bg-[#FFE600]/90">
+              <Button
+                onClick={handleConnect}
+                className="bg-[#FFE600] text-black hover:bg-[#FFE600]/90 shadow-lg hover:shadow-xl font-sans font-bold"
+              >
                 Conectar con MercadoLibre
               </Button>
             </div>
           ) : (
             <>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {connections.map(connection => (
                   <div
                     key={connection.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex items-center justify-between p-5 border-2 border-neutral-200 rounded-xl bg-white hover:border-primary-300 hover:shadow-md transition-all duration-200"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">ID: {connection.meli_user_id}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-sans font-semibold text-neutral-900">ID: {connection.meli_user_id}</span>
                           {connection.is_active && (
-                            <Badge variant="default" className="bg-blue-500">
+                            <Badge variant="info">
                               Activa
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-sm flex-wrap">
                           {connection.status === 'connected' ? (
                             <div className="flex items-center gap-2">
-                              <Badge variant="default" className="bg-green-500">
+                              <Badge variant="success">
                                 ✓ Conectada
                               </Badge>
-                              <span className="text-xs text-gray-500">Puede sincronizar</span>
+                              <span className="text-xs font-body text-neutral-500">Puede sincronizar</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="bg-gray-400">
+                              <Badge variant="secondary">
                                 ○ Desconectada
                               </Badge>
-                              <span className="text-xs text-gray-500">Sin acceso a API</span>
+                              <span className="text-xs font-body text-neutral-500">Sin acceso a API</span>
                             </div>
                           )}
                         </div>
@@ -281,10 +309,9 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                         </>
                       ) : (
                         <Button
-                          variant="default"
                           size="sm"
                           onClick={handleReconnect}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-success hover:bg-success/90"
                         >
                           Reconectar
                         </Button>
@@ -302,10 +329,10 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                 ))}
               </div>
 
-              <div className="pt-4 border-t space-y-3">
+              <div className="pt-6 border-t-2 border-neutral-200 space-y-4">
                 <Button
                   onClick={handleConnect}
-                  className="w-full bg-[#FFE600] text-black hover:bg-[#FFE600]/90"
+                  className="w-full bg-[#FFE600] text-black hover:bg-[#FFE600]/90 shadow-md hover:shadow-lg font-sans font-bold"
                 >
                   Conectar otra cuenta de MercadoLibre
                 </Button>
@@ -316,13 +343,16 @@ export function MeliConnectButton({ connections }: MeliConnectButtonProps) {
                       onClick={handleSyncProducts}
                       disabled={loading === 'sync'}
                       className="w-full"
+                      size="lg"
                     >
                       {loading === 'sync' ? 'Sincronizando...' : 'Sincronizar productos'}
                     </Button>
                   ) : (
-                    <div className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-center text-sm text-gray-600">
-                      ⚠️ La cuenta activa está desconectada. Reconéctala para sincronizar productos.
-                    </div>
+                    <Alert variant="warning">
+                      <AlertDescription className="text-center font-body">
+                        ⚠️ La cuenta activa está desconectada. Reconéctala para sincronizar productos.
+                      </AlertDescription>
+                    </Alert>
                   )
                 )}
               </div>

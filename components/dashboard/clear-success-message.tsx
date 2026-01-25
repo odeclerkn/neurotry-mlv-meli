@@ -1,11 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 export function ClearSuccessMessage() {
-  const router = useRouter()
-
   useEffect(() => {
     // Verificar si hay query params de éxito
     const url = new URL(window.location.href)
@@ -20,7 +17,7 @@ export function ClearSuccessMessage() {
 
       return () => clearTimeout(timer)
     }
-  }, [router])
+  }, [])
 
   return null
 }

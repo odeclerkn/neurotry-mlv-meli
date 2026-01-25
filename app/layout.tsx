@@ -1,12 +1,24 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Poppins, Montserrat } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
+  display: 'swap',
+})
+
+const montserrat = Montserrat({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'MLP Optimizador MELI',
-  description: 'Optimiza tus publicaciones de MercadoLibre',
+  title: 'Optimizador de publicaciones MELI',
+  description: 'Optimiza tus publicaciones de MercadoLibre con IA',
 }
 
 export default function RootLayout({
@@ -16,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={inter.className}>{children}</body>
+      <body className={`${poppins.variable} ${montserrat.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }

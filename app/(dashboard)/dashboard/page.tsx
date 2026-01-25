@@ -32,87 +32,88 @@ export default async function DashboardPage({
   const activeConnection = await getActiveMeliConnection(user.id)
 
   // Obtener productos si hay conexión activa
-  let products = []
+  let products: Awaited<ReturnType<typeof getMeliProducts>> = []
   if (activeConnection) {
     products = await getMeliProducts(activeConnection.id)
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <ClearSuccessMessage />
+    <div className="min-h-screen bg-gradient-light">
+      <div className="container mx-auto px-4 py-10 max-w-6xl">
+        <ClearSuccessMessage />
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenido, {profile?.full_name || user.email}
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Dashboard de optimización de publicaciones
-        </p>
-      </div>
+        <div className="mb-10">
+          <h1 className="text-4xl font-sans font-bold text-primary-900 mb-2">
+            Bienvenido, {profile?.full_name || user.email}
+          </h1>
+          <p className="text-lg font-body text-neutral-600">
+            Dashboard de optimización de publicaciones
+          </p>
+        </div>
 
-      {/* Mostrar mensajes de éxito o error */}
-      {searchParams.meli_success && (
-        <Alert className="mb-6 bg-green-50 border-green-200">
-          <AlertDescription className="text-green-800">
-            {searchParams.meli_success === 'new_connection' && (
-              <>✅ Nueva cuenta de MercadoLibre conectada (ID: {searchParams.meli_user_id})</>
-            )}
-            {searchParams.meli_success === 'reconnected' && (
-              <>✅ Cuenta reconectada exitosamente (ID: {searchParams.meli_user_id})</>
-            )}
-            {searchParams.meli_success === 'already_connected' && (
-              <>✅ Tokens actualizados exitosamente (ID: {searchParams.meli_user_id})</>
-            )}
-            {searchParams.meli_success === 'true' && (
-              <>✅ Cuenta de MercadoLibre conectada exitosamente</>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {searchParams.meli_error && (
-        <Alert className="mb-6 bg-red-50 border-red-200">
-          <AlertDescription className="text-red-800">
-            ❌ Error al conectar con MercadoLibre. Por favor, intenta de nuevo.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid gap-6">
-        {/* Tarjeta de conexión MELI */}
-        <MeliConnectButton connections={meliConnections} />
-
-        {/* Tarjeta de productos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Mis Productos</CardTitle>
-            <CardDescription>
-              {activeConnection ? (
-                <div className="flex items-center gap-2">
-                  <span>Productos de la cuenta {activeConnection.meli_user_id}</span>
-                  {activeConnection.status === 'connected' ? (
-                    <Badge className="bg-green-500">✓ Conectada - Puede sincronizar</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-gray-400">○ Desconectada - Solo históricos</Badge>
-                  )}
-                </div>
-              ) : (
-                'Tus publicaciones de MercadoLibre aparecerán aquí'
+        {/* Mostrar mensajes de éxito o error */}
+        {searchParams.meli_success && (
+          <Alert variant="success" className="mb-6">
+            <AlertDescription>
+              {searchParams.meli_success === 'new_connection' && (
+                <>✅ Nueva cuenta de MercadoLibre conectada (ID: {searchParams.meli_user_id})</>
               )}
-            </CardDescription>
-          </CardHeader>
+              {searchParams.meli_success === 'reconnected' && (
+                <>✅ Cuenta reconectada exitosamente (ID: {searchParams.meli_user_id})</>
+              )}
+              {searchParams.meli_success === 'already_connected' && (
+                <>✅ Tokens actualizados exitosamente (ID: {searchParams.meli_user_id})</>
+              )}
+              {searchParams.meli_success === 'true' && (
+                <>✅ Cuenta de MercadoLibre conectada exitosamente</>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {searchParams.meli_error && (
+          <Alert variant="error" className="mb-6">
+            <AlertDescription>
+              ❌ Error al conectar con MercadoLibre. Por favor, intenta de nuevo.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid gap-8">
+          {/* Tarjeta de conexión MELI */}
+          <MeliConnectButton connections={meliConnections} />
+
+          {/* Tarjeta de productos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-primary-900">Mis Publicaciones</CardTitle>
+              <CardDescription>
+                {activeConnection ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>Productos de la cuenta {activeConnection.meli_user_id}</span>
+                    {activeConnection.status === 'connected' ? (
+                      <Badge variant="success">✓ Conectada - Puede sincronizar</Badge>
+                    ) : (
+                      <Badge variant="secondary">○ Desconectada - Solo históricos</Badge>
+                    )}
+                  </div>
+                ) : (
+                  'Tus publicaciones de MercadoLibre aparecerán aquí'
+                )}
+              </CardDescription>
+            </CardHeader>
           <CardContent>
             {products.length === 0 ? (
-              <Alert>
+              <Alert variant="info">
                 <AlertDescription>
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="text-6xl mb-4">📦</div>
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-lg font-sans font-bold mb-2 text-neutral-900">
                       {activeConnection
                         ? 'No hay productos sincronizados'
                         : 'Lista de productos vacía'}
                     </h3>
-                    <p className="text-gray-600 max-w-md">
+                    <p className="font-body text-neutral-700 max-w-md">
                       {activeConnection
                         ? activeConnection.status === 'connected'
                           ? 'Haz clic en "Sincronizar productos" para cargar tus publicaciones de MercadoLibre.'
@@ -123,11 +124,11 @@ export default async function DashboardPage({
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                    className="border-2 border-neutral-200 rounded-xl overflow-hidden hover:shadow-xl hover:border-primary-300 transition-all duration-200 bg-white"
                   >
                     {product.thumbnail && (
                       <img
@@ -136,32 +137,29 @@ export default async function DashboardPage({
                         className="w-full h-48 object-cover"
                       />
                     )}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                    <div className="p-5">
+                      <h3 className="font-sans font-semibold text-sm mb-3 line-clamp-2 text-neutral-900">
                         {product.title}
                       </h3>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="font-bold text-green-600">
+                      <div className="flex justify-between items-center text-sm mb-2">
+                        <span className="font-sans font-bold text-lg text-success">
                           ${product.price?.toLocaleString('es-MX')}
                         </span>
-                        <span className="text-gray-500">
+                        <span className="font-body text-neutral-600">
                           Stock: {product.available_quantity}
                         </span>
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">
+                      <div className="mt-2 text-xs font-body text-neutral-500">
                         Vendidos: {product.sold_quantity || 0}
                       </div>
                       {product.status && (
-                        <div className="mt-2">
-                          <span
-                            className={`text-xs px-2 py-1 rounded ${
-                              product.status === 'active'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
+                        <div className="mt-3">
+                          <Badge
+                            variant={product.status === 'active' ? 'success' : 'secondary'}
+                            className="text-xs"
                           >
                             {product.status}
-                          </span>
+                          </Badge>
                         </div>
                       )}
                     </div>
@@ -172,66 +170,67 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        {/* Estadísticas */}
-        {products.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription>Total de productos</CardDescription>
-                <CardTitle className="text-3xl">{products.length}</CardTitle>
-              </CardHeader>
-            </Card>
+          {/* Estadísticas */}
+          {products.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-gradient-to-br from-primary-50 to-white border-primary-200">
+                <CardHeader className="pb-3">
+                  <CardDescription>Total de productos</CardDescription>
+                  <CardTitle className="text-4xl text-primary-700">{products.length}</CardTitle>
+                </CardHeader>
+              </Card>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription>Total vendidos</CardDescription>
-                <CardTitle className="text-3xl">
-                  {products.reduce((sum, p) => sum + (p.sold_quantity || 0), 0)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
+              <Card className="bg-gradient-to-br from-success-light to-white border-green-200">
+                <CardHeader className="pb-3">
+                  <CardDescription>Total vendidos</CardDescription>
+                  <CardTitle className="text-4xl text-success">
+                    {products.reduce((sum, p) => sum + (p.sold_quantity || 0), 0)}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription>Stock total</CardDescription>
-                <CardTitle className="text-3xl">
-                  {products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-        )}
+              <Card className="bg-gradient-to-br from-info-light to-white border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardDescription>Stock total</CardDescription>
+                  <CardTitle className="text-4xl text-info">
+                    {products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+          )}
 
-        {/* Información adicional */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Funcionalidades disponibles</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li className="flex items-start">
-                <span className="mr-2">✅</span>
-                <span>Autenticación con Supabase</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">✅</span>
-                <span>Conexión con MercadoLibre (múltiples cuentas)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">✅</span>
-                <span>Sincronización de productos</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">⏳</span>
-                <span>Próximamente: Análisis y optimización con IA</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">⏳</span>
-                <span>Próximamente: Recomendaciones automáticas</span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
+          {/* Información adicional */}
+          <Card className="border-primary-200 bg-gradient-to-br from-white to-primary-50">
+            <CardHeader>
+              <CardTitle className="text-primary-900">Funcionalidades disponibles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 text-sm font-body">
+                <li className="flex items-start">
+                  <span className="mr-3 text-lg">✅</span>
+                  <span className="text-neutral-900">Autenticación con Supabase</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-3 text-lg">✅</span>
+                  <span className="text-neutral-900">Conexión con MercadoLibre (múltiples cuentas)</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-3 text-lg">✅</span>
+                  <span className="text-neutral-900">Sincronización de productos</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-3 text-lg">⏳</span>
+                  <span className="text-neutral-600">Próximamente: Análisis y optimización con IA</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-3 text-lg">⏳</span>
+                  <span className="text-neutral-600">Próximamente: Recomendaciones automáticas</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

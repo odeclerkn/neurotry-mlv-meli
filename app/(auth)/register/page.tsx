@@ -51,16 +51,27 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Crear Cuenta
-          </CardTitle>
-          <CardDescription className="text-center">
-            Regístrate para comenzar a optimizar tus publicaciones
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-light py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-6">
+        {/* Logo/Nombre de la aplicación */}
+        <div className="text-center">
+          <h1 className="text-4xl font-sans font-bold text-primary-900 mb-2">
+            Neurotry - Optimizador de publicaciones MELI
+          </h1>
+          <p className="text-lg font-body text-neutral-600">
+            Potencia tus ventas con IA
+          </p>
+        </div>
+
+        <Card className="w-full">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              Crear Cuenta
+            </CardTitle>
+            <CardDescription className="text-center">
+              Regístrate para comenzar a optimizar tus publicaciones
+            </CardDescription>
+          </CardHeader>
 
         <form onSubmit={handleRegister}>
           <CardContent className="space-y-4">
@@ -71,7 +82,7 @@ export default function RegisterPage() {
             )}
 
             {success && (
-              <Alert>
+              <Alert variant="success">
                 <AlertDescription>
                   Cuenta creada exitosamente. Redirigiendo...
                 </AlertDescription>
@@ -129,15 +140,16 @@ export default function RegisterPage() {
               {loading ? 'Creando cuenta...' : 'Registrarse'}
             </Button>
 
-            <p className="text-sm text-center text-gray-600">
+            <p className="text-sm text-center font-body text-neutral-600">
               ¿Ya tienes cuenta?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link href="/login" className="text-primary-500 hover:text-primary-700 hover:underline font-semibold">
                 Inicia sesión aquí
               </Link>
             </p>
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }

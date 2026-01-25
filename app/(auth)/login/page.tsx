@@ -38,16 +38,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Iniciar Sesión
-          </CardTitle>
-          <CardDescription className="text-center">
-            Ingresa tus credenciales para acceder
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-light py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-6">
+        {/* Logo/Nombre de la aplicación */}
+        <div className="text-center">
+          <h1 className="text-4xl font-sans font-bold text-primary-900 mb-2">
+            Neurotry - Optimizador de publicaciones MELI
+          </h1>
+          <p className="text-lg font-body text-neutral-600">
+            Potencia tus ventas con IA
+          </p>
+        </div>
+
+        <Card className="w-full">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              Iniciar Sesión
+            </CardTitle>
+            <CardDescription className="text-center">
+              Ingresa tus credenciales para acceder
+            </CardDescription>
+          </CardHeader>
 
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
@@ -93,15 +104,16 @@ export default function LoginPage() {
               {loading ? 'Ingresando...' : 'Ingresar'}
             </Button>
 
-            <p className="text-sm text-center text-gray-600">
+            <p className="text-sm text-center font-body text-neutral-600">
               ¿No tienes cuenta?{' '}
-              <Link href="/register" className="text-blue-600 hover:underline">
+              <Link href="/register" className="text-primary-500 hover:text-primary-700 hover:underline font-semibold">
                 Regístrate aquí
               </Link>
             </p>
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }
