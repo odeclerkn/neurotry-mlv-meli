@@ -117,13 +117,7 @@ export default async function DashboardPage({
                     )}
                   </CardDescription>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  {productsWithAnalysis > 0 && <ExportAnalysisButton />}
-                  {/* Debug info */}
-                  <span className="text-xs text-neutral-500">
-                    {productsWithAnalysis > 0 ? `${productsWithAnalysis} con análisis IA` : 'Ningún análisis guardado'}
-                  </span>
-                </div>
+                {productsWithAnalysis > 0 && <ExportAnalysisButton />}
               </div>
             </CardHeader>
           <CardContent>
@@ -152,36 +146,6 @@ export default async function DashboardPage({
             )}
           </CardContent>
         </Card>
-
-          {/* Estadísticas */}
-          {products.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-gradient-to-br from-primary-50 to-white border-primary-200">
-                <CardHeader className="pb-3">
-                  <CardDescription>Total de productos</CardDescription>
-                  <CardTitle className="text-4xl text-primary-700">{products.length}</CardTitle>
-                </CardHeader>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-success-light to-white border-green-200">
-                <CardHeader className="pb-3">
-                  <CardDescription>Total vendidos</CardDescription>
-                  <CardTitle className="text-4xl text-success">
-                    {products.reduce((sum, p) => sum + (p.sold_quantity || 0), 0)}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-info-light to-white border-blue-200">
-                <CardHeader className="pb-3">
-                  <CardDescription>Stock total</CardDescription>
-                  <CardTitle className="text-4xl text-info">
-                    {products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     </div>
