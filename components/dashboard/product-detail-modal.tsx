@@ -10,8 +10,6 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ConfirmationModal } from '@/components/confirmation-modal'
-import { NotificationModal } from '@/components/notification-modal'
 
 interface ProductDetailModalProps {
   product: any
@@ -35,13 +33,6 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   const [showHistory, setShowHistory] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
 
-  // Estados para modales de confirmación
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
-  const [restoreHistoryId, setRestoreHistoryId] = useState<string | null>(null)
-  const [showSuccessNotification, setShowSuccessNotification] = useState(false)
-  const [successMessage, setSuccessMessage] = useState({ title: '', message: '' })
-
   useEffect(() => {
     if (isOpen && product) {
       // Resetear estados al abrir el modal
@@ -50,12 +41,6 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       setAnalyzedAt('')
       setAnalysisHistory([])
       setShowHistory(false)
-
-      // Resetear estados de modales de confirmación
-      setShowDeleteConfirm(false)
-      setShowRestoreConfirm(false)
-      setRestoreHistoryId(null)
-      setShowSuccessNotification(false)
 
       // Solo mostrar loading si este producto está siendo analizado
       if (currentLoadingProductId && currentLoadingProductId !== product.meli_product_id) {
@@ -70,12 +55,6 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         fetchSavedAnalysis()
         fetchAnalysisHistory()
       }
-    } else if (!isOpen) {
-      // Cuando se cierra el modal principal, resetear TODOS los estados de confirmación
-      setShowDeleteConfirm(false)
-      setShowRestoreConfirm(false)
-      setRestoreHistoryId(null)
-      setShowSuccessNotification(false)
     }
   }, [isOpen, product])
 
@@ -214,14 +193,16 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
     }
   }
 
-  const handleDeleteClick = () => {
+  const confirmDelete = async () => {
     if (!product?.meli_product_id) return
-    setShowDeleteConfirm(true)
-  }
 
-  const handleDeleteConfirm = async () => {
-    setShowDeleteConfirm(false)
-    if (!product?.meli_product_id) return
+    const confirmed = window.confirm(
+      '¿Estás seguro de eliminar este análisis?\n\n' +
+      'Se eliminará el análisis actual pero el histórico se preservará. ' +
+      'Podrás restaurar cualquier análisis previo cuando quieras.'
+    )
+
+    if (!confirmed) return
 
     console.log('🔴 Eliminando análisis...')
     setDeletingAnalysis(true)
@@ -241,45 +222,32 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         await fetchAnalysisHistory()
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
-        // Mostrar notificación de éxito
-        setSuccessMessage({
-          title: 'Análisis eliminado',
-          message: 'El análisis actual se eliminó correctamente.\n\nEl histórico se ha preservado y podés restaurar cualquier versión anterior cuando quieras.'
-        })
-        setShowSuccessNotification(true)
       } else {
         const errorData = await response.json()
         console.error('🔴 Error eliminando análisis:', response.status, errorData)
-        setSuccessMessage({
-          title: 'Error al eliminar',
-          message: errorData.error || 'Error desconocido al eliminar el análisis.'
-        })
-        setShowSuccessNotification(true)
+        alert(`Error al eliminar: ${errorData.error || 'Error desconocido'}`)
       }
     } catch (error) {
       console.error('🔴 Error deleting analysis:', error)
-      setSuccessMessage({
-        title: 'Error',
-        message: 'Error al eliminar el análisis. Por favor, intentá de nuevo.'
-      })
-      setShowSuccessNotification(true)
+      alert('Error al eliminar el análisis.')
     } finally {
       setDeletingAnalysis(false)
     }
   }
 
-  const handleRestoreClick = (historyId: string) => {
+  const confirmRestore = async (historyId: string) => {
     if (!product?.meli_product_id) return
-    setRestoreHistoryId(historyId)
-    setShowRestoreConfirm(true)
-  }
 
-  const handleRestoreConfirm = async () => {
-    setShowRestoreConfirm(false)
-    if (!product?.meli_product_id || !restoreHistoryId) return
+    const confirmed = window.confirm(
+      '¿Restaurar este análisis como actual?\n\n' +
+      'Este análisis se establecerá como actual, reemplazando el que tenés ahora. ' +
+      'El histórico completo se mantendrá.'
+    )
 
-    console.log('♻️ Restaurando análisis:', restoreHistoryId)
-    setRestoringId(restoreHistoryId)
+    if (!confirmed) return
+
+    console.log('♻️ Restaurando análisis:', historyId)
+    setRestoringId(historyId)
 
     try {
       const response = await fetch('/api/meli/analyze-listing', {
@@ -288,7 +256,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          history_id: restoreHistoryId,
+          history_id: historyId,
           product_id: product.meli_product_id
         })
       })
@@ -301,31 +269,16 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         await fetchAnalysisHistory()
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
-        // Mostrar notificación de éxito
-        setSuccessMessage({
-          title: 'Análisis restaurado',
-          message: 'El análisis se restauró correctamente como actual.\n\nEl histórico completo se mantiene intacto.'
-        })
-        setShowSuccessNotification(true)
       } else {
         const errorData = await response.json()
         console.error('🔴 Error restaurando:', errorData)
-        setSuccessMessage({
-          title: 'Error al restaurar',
-          message: errorData.error || 'Error desconocido al restaurar el análisis.'
-        })
-        setShowSuccessNotification(true)
+        alert(`Error al restaurar: ${errorData.error || 'Error desconocido'}`)
       }
     } catch (error) {
       console.error('🔴 Error restoring analysis:', error)
-      setSuccessMessage({
-        title: 'Error',
-        message: 'Error al restaurar el análisis. Por favor, intentá de nuevo.'
-      })
-      setShowSuccessNotification(true)
+      alert('Error al restaurar el análisis')
     } finally {
       setRestoringId(null)
-      setRestoreHistoryId(null)
     }
   }
 
@@ -352,12 +305,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-4xl max-h-[90vh] overflow-y-auto"
-        style={{
-          pointerEvents: (showDeleteConfirm || showRestoreConfirm || showSuccessNotification) ? 'none' : 'auto'
-        }}
-      >
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-primary-900 text-2xl">Detalle de Publicación</DialogTitle>
           <DialogDescription>
@@ -481,7 +429,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                 </button>
                 {analysis && (
                   <button
-                    onClick={handleDeleteClick}
+                    onClick={confirmDelete}
                     disabled={loadingAnalysis || deletingAnalysis}
                     className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors font-sans font-semibold text-sm"
                   >
@@ -875,7 +823,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                       {!(idx === 0 && analysis) && (
                         <div className="mt-3 flex justify-end">
                           <button
-                            onClick={() => handleRestoreClick(hist.id)}
+                            onClick={() => confirmRestore(hist.id)}
                             disabled={restoringId === hist.id}
                             className="px-3 py-1.5 bg-blue-500 text-white text-xs font-sans font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                           >
@@ -961,42 +909,6 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       </DialogContent>
 
     </Dialog>
-
-      {/* Modal de confirmación para eliminar */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        title="¿Eliminar análisis?"
-        message={'Se eliminará el análisis actual pero el histórico se preservará.\n\nPodrás restaurar cualquier análisis previo cuando quieras.'}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        confirmVariant="danger"
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setShowDeleteConfirm(false)}
-      />
-
-      {/* Modal de confirmación para restaurar */}
-      <ConfirmationModal
-        isOpen={showRestoreConfirm}
-        title="¿Restaurar análisis?"
-        message={'Este análisis se establecerá como actual, reemplazando el que tenés ahora.\n\nEl histórico completo se mantendrá.'}
-        confirmText="Restaurar"
-        cancelText="Cancelar"
-        confirmVariant="primary"
-        onConfirm={handleRestoreConfirm}
-        onCancel={() => {
-          setShowRestoreConfirm(false)
-          setRestoreHistoryId(null)
-        }}
-      />
-
-      {/* Modal de notificación de éxito/error */}
-      <NotificationModal
-        isOpen={showSuccessNotification}
-        title={successMessage.title}
-        message={successMessage.message}
-        variant={successMessage.title.includes('Error') ? 'error' : 'success'}
-        onClose={() => setShowSuccessNotification(false)}
-      />
     </>
   )
 }
