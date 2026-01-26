@@ -31,6 +31,8 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   const [analysisHistory, setAnalysisHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     if (isOpen && product) {
@@ -192,7 +194,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   const deleteAnalysis = async () => {
     if (!product?.meli_product_id) return
 
-    console.log('Eliminando análisis...')
+    console.log('🔴 Eliminando análisis...')
     setShowDeleteConfirm(false)
     setDeletingAnalysis(true)
     try {
@@ -200,20 +202,69 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         method: 'DELETE'
       })
 
+      console.log('🔴 Response status:', response.status)
+
       if (response.ok) {
-        console.log('Análisis eliminado correctamente')
+        const data = await response.json()
+        console.log('🟢 Análisis eliminado correctamente:', data)
         setAnalysis(null)
         setAiProvider('')
         setAnalyzedAt('')
+        // El histórico se mantiene (no se borra)
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
       } else {
-        console.error('Error eliminando análisis:', response.status)
+        const errorData = await response.json()
+        console.error('🔴 Error eliminando análisis:', response.status, errorData)
+        alert(`Error al eliminar: ${errorData.error || 'Error desconocido'}`)
       }
     } catch (error) {
-      console.error('Error deleting analysis:', error)
+      console.error('🔴 Error deleting analysis:', error)
+      alert('Error al eliminar el análisis. Por favor, verifica la consola.')
     } finally {
       setDeletingAnalysis(false)
+    }
+  }
+
+  const restoreAnalysis = async (historyId: string) => {
+    if (!product?.meli_product_id) return
+
+    console.log('♻️ Restaurando análisis:', historyId)
+    setRestoringId(historyId)
+    try {
+      const response = await fetch('/api/meli/analyze-listing', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          history_id: historyId,
+          product_id: product.meli_product_id
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🟢 Análisis restaurado:', data)
+        // Recargar análisis actual y histórico
+        await fetchSavedAnalysis()
+        await fetchAnalysisHistory()
+        // Notificar cambio para refrescar la lista
+        if (onAnalysisChange) onAnalysisChange()
+        setNotification({ message: 'Análisis restaurado correctamente', type: 'success' })
+        setTimeout(() => setNotification(null), 3000)
+      } else {
+        const errorData = await response.json()
+        console.error('🔴 Error restaurando:', errorData)
+        setNotification({ message: `Error al restaurar: ${errorData.error || 'Error desconocido'}`, type: 'error' })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('🔴 Error restoring analysis:', error)
+      setNotification({ message: 'Error al restaurar el análisis', type: 'error' })
+      setTimeout(() => setNotification(null), 5000)
+    } finally {
+      setRestoringId(null)
     }
   }
 
@@ -238,6 +289,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   if (!product) return null
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -660,6 +712,14 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                 </button>
               </div>
 
+              {!analysis && analysisHistory.length > 0 && (
+                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs font-body text-red-800">
+                    ℹ️ El análisis actual fue eliminado. El histórico se mantiene para referencia.
+                  </p>
+                </div>
+              )}
+
               {showHistory && (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {analysisHistory.map((hist: any, idx: number) => (
@@ -698,9 +758,15 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                           </div>
                         </div>
                         {idx === 0 && (
-                          <Badge variant="default" className="bg-green-600 text-xs">
-                            Actual
-                          </Badge>
+                          analysis ? (
+                            <Badge variant="default" className="bg-green-600 text-xs">
+                              Actual
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="bg-red-500 text-xs">
+                              Eliminado
+                            </Badge>
+                          )
                         )}
                       </div>
 
@@ -712,12 +778,52 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                         </div>
                       )}
 
+                      {hist.improvements_explanation && (
+                        <div className="mt-2">
+                          <p className="text-xs font-body text-neutral-500 mb-1">Explicación de mejoras:</p>
+                          <p className="text-xs font-body text-neutral-700 bg-blue-50 p-2 rounded">
+                            {hist.improvements_explanation}
+                          </p>
+                        </div>
+                      )}
+
                       {hist.suggested_title && hist.suggested_title !== product.title && (
                         <div className="mt-2">
                           <p className="text-xs font-body text-neutral-500 mb-1">Título sugerido:</p>
                           <p className="text-xs font-body text-neutral-700 italic">
                             "{hist.suggested_title}"
                           </p>
+                        </div>
+                      )}
+
+                      {hist.suggested_description && (
+                        <div className="mt-2">
+                          <p className="text-xs font-body text-neutral-500 mb-1">Descripción sugerida:</p>
+                          <div className="text-xs font-body text-neutral-700 bg-neutral-50 p-2 rounded max-h-32 overflow-y-auto">
+                            {hist.suggested_description}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botón de restaurar - mostrar si NO es el análisis actual */}
+                      {!(idx === 0 && analysis) && (
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            onClick={() => restoreAnalysis(hist.id)}
+                            disabled={restoringId === hist.id}
+                            className="px-3 py-1.5 bg-blue-500 text-white text-xs font-sans font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            {restoringId === hist.id ? (
+                              <>
+                                <span className="animate-spin">⟳</span>
+                                Restaurando...
+                              </>
+                            ) : (
+                              <>
+                                ♻️ Restaurar como actual
+                              </>
+                            )}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -788,33 +894,95 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         </div>
       </DialogContent>
 
-      {/* Modal de confirmación para borrar */}
+    </Dialog>
+
+      {/* Modal de confirmación para borrar - Completamente fuera del Dialog */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-sans font-bold text-neutral-900 mb-3">
-              ¿Eliminar análisis?
-            </h3>
-            <p className="text-sm font-body text-neutral-700 mb-6">
-              Se eliminará el análisis de IA para este producto. Esta acción no se puede deshacer.
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <div
+            className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-2xl border-2 border-neutral-200"
+            style={{ zIndex: 10000 }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl">🗑️</span>
+              </div>
+              <h3 className="text-xl font-sans font-bold text-neutral-900">
+                ¿Eliminar análisis?
+              </h3>
+            </div>
+            <p className="text-sm font-body text-neutral-700 mb-6 ml-15">
+              Se eliminará el análisis de IA para este producto. El histórico se preservará y podrás restaurar cualquier análisis previo cuando quieras.
             </p>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 bg-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-300 transition-colors font-sans font-semibold text-sm"
+                type="button"
+                onClick={() => {
+                  console.log('❌ Cancelar eliminar análisis')
+                  setShowDeleteConfirm(false)
+                }}
+                className="px-5 py-2.5 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors font-sans font-semibold text-sm border border-neutral-300"
               >
                 Cancelar
               </button>
               <button
-                onClick={deleteAnalysis}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-sans font-semibold text-sm"
+                type="button"
+                onClick={() => {
+                  console.log('✅ Confirmar eliminar análisis')
+                  setShowDeleteConfirm(false)
+                  setTimeout(() => deleteAnalysis(), 100)
+                }}
+                className="px-5 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-sans font-semibold text-sm shadow-lg"
               >
-                Eliminar
+                Sí, eliminar
               </button>
             </div>
           </div>
         </div>
       )}
-    </Dialog>
+
+      {/* Modal de notificación (éxito/error) */}
+      {notification && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <div
+            className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-2xl border-2 border-neutral-200"
+            style={{ zIndex: 10000 }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                notification.type === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                <span className="text-2xl">
+                  {notification.type === 'success' ? '✅' : '❌'}
+                </span>
+              </div>
+              <h3 className="text-xl font-sans font-bold text-neutral-900">
+                {notification.type === 'success' ? 'Éxito' : 'Error'}
+              </h3>
+            </div>
+            <p className="text-sm font-body text-neutral-700 mb-6 ml-15">
+              {notification.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
+                className={`px-5 py-2.5 text-white rounded-lg hover:opacity-90 transition-colors font-sans font-semibold text-sm shadow-lg ${
+                  notification.type === 'success' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

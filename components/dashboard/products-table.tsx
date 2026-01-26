@@ -28,10 +28,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b-2 border-neutral-200 bg-neutral-50">
-              <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700"></th>
+              <th className="w-20 p-3"></th>
               <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700">Título</th>
               <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700">Descripción</th>
-              <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700">✨ Sugerencias IA</th>
+              <th className="text-left p-3 font-sans font-semibold text-sm text-neutral-700">Análisis IA</th>
               <th className="text-right p-3 font-sans font-semibold text-sm text-neutral-700">Precio</th>
               <th className="text-center p-3 font-sans font-semibold text-sm text-neutral-700">Stock</th>
               <th className="text-center p-3 font-sans font-semibold text-sm text-neutral-700">Vendidos</th>
@@ -51,32 +51,38 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'
                 }`}
               >
-                <td className="p-3 w-20">
-                  <div className="relative">
-                    {product.thumbnail && (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded-lg border border-neutral-200"
-                      />
-                    )}
+                <td className="p-3">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <img
+                      src={product.thumbnail}
+                      alt={product.title}
+                      className="w-full h-full object-cover rounded border border-neutral-200"
+                    />
                     {product.is_new && (
-                      <div className="absolute -top-1 -right-1 flex items-center gap-1 bg-green-500 text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-full shadow-md">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                        NEW
-                      </div>
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
                     )}
                     {product.is_updated && !product.is_new && (
-                      <div className="absolute -top-1 -right-1 flex items-center gap-1 bg-blue-500 text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-full shadow-md">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                        UPD
-                      </div>
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>
                     )}
                   </div>
                 </td>
                 <td className="p-3 font-body text-sm text-neutral-900 max-w-xs">
-                  <div className="line-clamp-2">
-                    {product.title}
+                  <div className="flex items-center gap-2">
+                    <div className="line-clamp-2 flex-1">
+                      {product.title}
+                    </div>
+                    {product.is_new && (
+                      <span className="flex items-center gap-1 bg-green-500 text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-full shadow-sm flex-shrink-0">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                        NEW
+                      </span>
+                    )}
+                    {product.is_updated && !product.is_new && (
+                      <span className="flex items-center gap-1 bg-blue-500 text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-full shadow-sm flex-shrink-0">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                        UPD
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="p-3 font-body text-xs text-neutral-600 max-w-sm">
@@ -84,10 +90,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                     {product.description || 'Sin descripción'}
                   </div>
                 </td>
-                <td className="p-3 max-w-md">
+                <td className="p-3 text-center">
                   {(() => {
                     if (!product.product_ai_analysis) {
-                      return <span className="text-xs text-neutral-400 italic">Sin análisis</span>
+                      return <span className="text-xs text-neutral-500">No tiene</span>
                     }
 
                     // Puede ser un objeto o un array
@@ -96,24 +102,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
                       : product.product_ai_analysis
 
                     if (!analysis) {
-                      return <span className="text-xs text-neutral-400 italic">Sin análisis</span>
+                      return <span className="text-xs text-neutral-500">No tiene</span>
                     }
 
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="text-xs font-semibold text-purple-700">✨ Hay sugerencias</span>
-                        </div>
-                        {analysis.suggested_title && analysis.suggested_title !== product.title && (
-                          <div className="text-[11px] text-neutral-600">
-                            <span className="font-semibold">Título:</span>
-                            <div className="line-clamp-2 text-purple-700 italic">
-                              {analysis.suggested_title}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
+                    return <span className="text-xs text-green-600 font-medium">Tiene</span>
                   })()}
                 </td>
                 <td className="p-3 text-right font-sans font-bold text-success whitespace-nowrap">

@@ -78,27 +78,6 @@ export default async function DashboardPage({
           </p>
         </div>
 
-        {/* Información sobre el valor de la herramienta */}
-        <Alert variant="info" className="mb-6">
-          <AlertDescription>
-            <div className="flex items-start gap-3">
-              <div className="text-2xl flex-shrink-0">💡</div>
-              <div>
-                <p className="font-body text-neutral-700 mb-2">
-                  Esta herramienta usa <strong>Inteligencia Artificial</strong> para analizar tus publicaciones
-                  y compararlas con los productos más exitosos. El resultado: sugerencias para aumentar tu visibilidad y ventas.
-                </p>
-                <Link
-                  href="/value-proposition"
-                  className="text-primary-600 hover:text-primary-700 font-sans font-semibold text-sm underline"
-                >
-                  Conoce cómo funciona y por qué deberías usarlo →
-                </Link>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-
         {/* Mostrar mensajes de éxito o error */}
         {searchParams.meli_success && (
           <Alert variant="success" className="mb-6">

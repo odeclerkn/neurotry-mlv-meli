@@ -194,6 +194,209 @@ export default async function ValuePropositionPage() {
           </CardContent>
         </Card>
 
+        {/* Sistema de Re-Análisis Evolutivo */}
+        <Card className="mb-8 border-2 border-purple-200 bg-purple-50">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="default" className="bg-purple-600">Funcionalidad avanzada</Badge>
+            </div>
+            <CardTitle className="text-2xl text-primary-900">Sistema de Re-Análisis Evolutivo</CardTitle>
+            <CardDescription className="text-base">
+              La IA aprende de cada análisis y mejora progresivamente tus publicaciones
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">¿Qué es el Re-Análisis Evolutivo?</h3>
+              <div className="bg-white border border-purple-200 rounded-lg p-4">
+                <p className="text-sm font-body text-neutral-700 mb-3">
+                  Cada vez que re-analizas un producto, la IA <strong>NO parte de cero</strong>. En cambio:
+                </p>
+                <ul className="space-y-2 text-sm font-body text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">1.</span>
+                    <span><strong>Toma como base</strong> las sugerencias previas (no el original de MELI)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">2.</span>
+                    <span><strong>Evoluciona</strong> esas sugerencias para hacerlas aún mejores</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">3.</span>
+                    <span><strong>Busca nuevas oportunidades</strong> de mejora basándose en lo ya optimizado</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">4.</span>
+                    <span><strong>Construye sobre el trabajo anterior</strong> como un experto que refina su trabajo</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">Ejemplo de Evolución</h3>
+              <div className="space-y-3">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="text-xs font-sans font-bold text-red-700 mb-2">📍 ORIGINAL de MercadoLibre</div>
+                  <div className="font-body text-neutral-900 text-sm">
+                    "Zapatillas Nike"
+                  </div>
+                </div>
+
+                <div className="text-center text-2xl">↓</div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="text-xs font-sans font-bold text-yellow-700 mb-2">🤖 Análisis 1 - Score: 6/10</div>
+                  <div className="font-body text-neutral-900 text-sm">
+                    "Zapatillas Nike Running Air Max - Hombre y Mujer"
+                  </div>
+                </div>
+
+                <div className="text-center text-2xl">↓</div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="text-xs font-sans font-bold text-blue-700 mb-2">🤖 Re-Análisis 2 (evoluciona el anterior) - Score: 8/10</div>
+                  <div className="font-body text-neutral-900 text-sm">
+                    "Zapatillas Nike Running Air Max 2024 - Deportivas Unisex - Envío Gratis"
+                  </div>
+                </div>
+
+                <div className="text-center text-2xl">↓</div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="text-xs font-sans font-bold text-green-700 mb-2">🤖 Re-Análisis 3 (mejora continua) - Score: 9/10</div>
+                  <div className="font-body text-neutral-900 text-sm">
+                    "Zapatillas Nike Air Max 2024 Running Deportivas Unisex Original - Envío Gratis CABA"
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-4">
+              <h4 className="font-sans font-bold text-purple-900 mb-3 flex items-center gap-2">
+                <span>💡</span> Cuándo Re-Analizar
+              </h4>
+              <ul className="space-y-2 text-sm font-body text-purple-900">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Ya implementaste las sugerencias anteriores en MELI</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Quieres seguir mejorando un producto importante</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Han pasado varias semanas y cambiaron las tendencias</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>NO re-analices sin implementar las sugerencias previas (la IA necesita evolucionar sobre cambios reales)</span>
+                </li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Histórico de Análisis */}
+        <Card className="mb-8 border-2 border-amber-200 bg-amber-50">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="default" className="bg-amber-600">Historial completo</Badge>
+            </div>
+            <CardTitle className="text-2xl text-primary-900">Histórico de Análisis</CardTitle>
+            <CardDescription className="text-base">
+              Todos tus análisis se guardan automáticamente para que puedas consultarlos y restaurarlos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">¿Qué guarda el histórico?</h3>
+              <div className="bg-white border border-amber-200 rounded-lg p-4">
+                <ul className="space-y-2 text-sm font-body text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">📝</span>
+                    <span><strong>Todos los análisis realizados:</strong> Cada vez que analizas o re-analizas, se guarda un registro completo</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">📅</span>
+                    <span><strong>Fecha y hora exactas:</strong> Sabes cuándo se hizo cada análisis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">🤖</span>
+                    <span><strong>Proveedor de IA usado:</strong> Claude, GPT-4, o Gemini</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">📊</span>
+                    <span><strong>Score obtenido:</strong> La puntuación de 0-10 de ese análisis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">💡</span>
+                    <span><strong>Sugerencias completas:</strong> Título, descripción y explicación de mejoras</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">♻️</span>
+                    <span><strong>Eventos especiales:</strong> Se marca si fue eliminado o restaurado</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">Restaurar Análisis Anteriores</h3>
+              <div className="bg-white border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-body text-neutral-700 mb-3">
+                  ¿Las nuevas sugerencias no te convencieron? ¿Preferís una versión anterior?
+                  <strong> Podés restaurar cualquier análisis del histórico como actual</strong> con un solo click.
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
+                  <p className="text-xs font-body text-blue-900">
+                    <strong>💡 Tip:</strong> Restaurar crea un nuevo registro en el histórico marcado como [RESTAURADO],
+                    así que nunca perdés información y siempre podés volver atrás.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">Eliminar vs Empezar de Cero</h3>
+              <div className="bg-white border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-body text-neutral-700 mb-3">
+                  Cuando eliminás el análisis actual:
+                </p>
+                <ul className="space-y-2 text-sm font-body text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span>El análisis actual se borra (el producto queda "sin análisis")</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span>El histórico se preserva completamente</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span>Se registra en el histórico que fue eliminado</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span>El próximo análisis partirá desde cero (usando el original de MELI)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span>Podés restaurar cualquier análisis anterior cuando quieras</span>
+                  </li>
+                </ul>
+                <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mt-3">
+                  <p className="text-xs font-body text-yellow-900">
+                    <strong>⚠️ Importante:</strong> Esto es útil si querés "resetear" y empezar una nueva línea de evolución,
+                    pero no pierdas las sugerencias anteriores - están en el histórico.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Guía Visual - Entendiendo la interfaz */}
         <Card className="mb-8">
           <CardHeader>
@@ -367,7 +570,7 @@ export default async function ValuePropositionPage() {
                 <div className="flex items-start gap-3 p-3 bg-neutral-50 border border-neutral-200 rounded">
                   <span className="text-xl flex-shrink-0">✨</span>
                   <div>
-                    <strong>Sugerencias IA:</strong> Cuando ves este ícono, significa que hay sugerencias de optimización disponibles.
+                    <strong>Análisis IA:</strong> Cuando ves este ícono, significa que hay sugerencias de optimización disponibles.
                     Haz click en la fila para verlas completas.
                   </div>
                 </div>
@@ -436,81 +639,105 @@ export default async function ValuePropositionPage() {
               </div>
             </div>
 
-            {/* Flujo de Datos */}
+            {/* Cómo funciona paso a paso */}
             <div>
-              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">Flujo de Datos</h3>
-              <div className="bg-neutral-900 text-neutral-100 rounded-lg p-6 font-mono text-xs overflow-x-auto">
-                <pre className="whitespace-pre">{`1. Sincronización de Productos
-   ├─ GET /users/{id}/items/search (MELI API)
-   ├─ GET /items/{id} (MELI API)
-   └─ INSERT INTO meli_products (Supabase)
-
-2. Obtención de Keywords Trending
-   ├─ GET /trends/MLA/{category_id} (MELI API)
-   └─ Cache en trending_keywords (24h TTL)
-
-3. Análisis de Competidores
-   ├─ GET /sites/MLA/search?sort=sold_quantity_desc
-   ├─ Filtro: misma categoría, ordenado por ventas
-   └─ Extracción: keywords comunes en top 10
-
-4. Análisis con IA
-   ├─ Provider: Anthropic Claude / OpenAI / Gemini
-   ├─ Prompt: Producto + Keywords + Competidores
-   ├─ Output: JSON con análisis estructurado
-   └─ Validación semántica de relevancia
-
-5. Persistencia
-   ├─ UPSERT INTO product_ai_analysis
-   ├─ Campos: score, title, description, keywords
-   └─ RLS policies por usuario
-
-6. Visualización
-   ├─ Server Component: fetch con JOIN
-   ├─ Client Component: modal con detalles
-   └─ ExcelJS: exportación multi-hoja`}</pre>
-              </div>
-            </div>
-
-            {/* APIs y Endpoints */}
-            <div>
-              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">APIs y Endpoints</h3>
-              <div className="space-y-3">
-                <div className="border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="font-mono text-xs">POST</Badge>
-                    <code className="font-mono text-sm text-neutral-900">/api/meli/sync-products</code>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">¿Cómo funciona el proceso completo?</h3>
+              <div className="space-y-4">
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Sincronización de Productos</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        La aplicación se conecta a MercadoLibre y obtiene toda la información de tus publicaciones: títulos,
+                        descripciones, precios, stock, imágenes y atributos. Usa la <em>API de Items de MELI</em> para traer
+                        los datos completos de cada producto (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/items/&#123;id&#125;</code>).
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm font-body text-neutral-600">
-                    Sincroniza productos desde MercadoLibre API. Rate limit: ~50 productos/minuto.
-                  </p>
                 </div>
-                <div className="border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="font-mono text-xs">GET</Badge>
-                    <code className="font-mono text-sm text-neutral-900">/api/meli/trending-keywords</code>
+
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      2
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Obtención de Keywords Trending</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        Para cada categoría de tus productos, la herramienta consulta las palabras clave más buscadas en
+                        MercadoLibre en este momento. Usa la <em>API de Trends de MELI</em> (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/trends/MLA/&#123;category_id&#125;</code>)
+                        para conocer qué términos están usando los compradores. Los resultados se guardan en caché por 24 horas.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm font-body text-neutral-600">
-                    Obtiene keywords trending de una categoría. Caché: 24 horas.
-                  </p>
                 </div>
-                <div className="border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="font-mono text-xs">POST</Badge>
-                    <code className="font-mono text-sm text-neutral-900">/api/meli/analyze-listing</code>
+
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      3
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Análisis de Competidores</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        La aplicación busca los productos más vendidos de tu misma categoría para identificar qué hacen bien.
+                        Usa la <em>API de Search de MELI</em> ordenando por cantidad vendida (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/sites/MLA/search?sort=sold_quantity_desc</code>)
+                        y extrae los keywords comunes en los títulos y descripciones de los top 10.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm font-body text-neutral-600">
-                    Analiza un producto con IA. Auto-detecta provider (Anthropic → OpenAI → Gemini). ~5-10s por producto.
-                  </p>
                 </div>
-                <div className="border border-neutral-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="font-mono text-xs">GET</Badge>
-                    <code className="font-mono text-sm text-neutral-900">/api/meli/export-analysis</code>
+
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      4
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Análisis con Inteligencia Artificial</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        Toda la información recopilada (tu producto, keywords trending, competidores exitosos) se envía a la IA
+                        (Claude de Anthropic, GPT-4 de OpenAI, o Gemini de Google). La IA analiza todo en conjunto y genera
+                        sugerencias específicas: título optimizado, descripción mejorada, score de calidad, y explicación
+                        detallada de por qué sugiere cada cambio. El proceso toma entre 5-10 segundos por producto.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm font-body text-neutral-600">
-                    Genera archivo Excel con todos los análisis. Usa ExcelJS, 3 hojas de datos.
-                  </p>
+                </div>
+
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      5
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Guardado del Análisis</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        El análisis se guarda en la base de datos de forma segura. Se actualiza el análisis actual del producto
+                        y se crea un registro en el histórico para que nunca pierdas las sugerencias previas. Cada usuario
+                        solo puede ver sus propios datos gracias a las políticas de seguridad Row Level Security.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                      6
+                    </div>
+                    <div>
+                      <div className="font-sans font-bold text-neutral-900 mb-1">Visualización y Exportación</div>
+                      <p className="text-sm font-body text-neutral-700">
+                        Los análisis se muestran en tu dashboard de forma clara y organizada. Podés ver los detalles completos
+                        haciendo click en cada producto, comparar el histórico, restaurar versiones anteriores, y exportar
+                        todo a Excel para trabajar offline o compartir con tu equipo.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

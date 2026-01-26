@@ -175,8 +175,30 @@ export async function POST(request: NextRequest) {
 
     const productData = await productResponse.json()
 
-    // Construir el prompt
-    const prompt = buildPrompt(productData, keywords)
+    // Verificar si existe un análisis previo para evolucionar sobre él
+    const { data: previousAnalysis } = await supabase
+      .from('product_ai_analysis')
+      .select('suggested_title, suggested_description')
+      .eq('product_id', dbProduct.id)
+      .single()
+
+    // Si hay análisis previo, usar las sugerencias como base para evolucionar
+    // Si no, usar el título/descripción original de MercadoLibre
+    const baseTitle = previousAnalysis?.suggested_title || productData.title
+    const baseDescription = previousAnalysis?.suggested_description || productData.description?.plain_text
+
+    // Crear una copia de productData con los datos base (sugeridos o originales)
+    const productDataForPrompt = {
+      ...productData,
+      title: baseTitle,
+      description: {
+        ...productData.description,
+        plain_text: baseDescription
+      }
+    }
+
+    // Construir el prompt con los datos base
+    const prompt = buildPrompt(productDataForPrompt, keywords, !!previousAnalysis)
 
     // Llamar al proveedor de IA correspondiente
     let analysisText: string
@@ -206,12 +228,20 @@ export async function POST(request: NextRequest) {
 
     const analysis = JSON.parse(jsonMatch[0])
 
+    // Normalizar el score: si está en escala 0-100, convertir a 0-10
+    let normalizedScore = analysis.overallScore || 0
+    if (normalizedScore > 10) {
+      normalizedScore = Math.round(normalizedScore / 10)
+    }
+    // Asegurar que esté en el rango válido
+    normalizedScore = Math.max(0, Math.min(10, normalizedScore))
+
     const analysisData = {
       product_id: dbProduct.id,
       suggested_title: analysis.suggestions?.optimizedTitle || null,
       suggested_description: analysis.suggestions?.optimizedDescription || analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
       improvements_explanation: analysis.suggestions?.descriptionImprovements?.join('\n') || analysis.summary || null,
-      overall_score: analysis.overallScore || 0,
+      overall_score: normalizedScore,
       summary: analysis.summary || null,
       keyword_analysis: analysis.keywordAnalysis || [],
       suggestions: analysis.suggestions || {},
@@ -262,9 +292,13 @@ export async function POST(request: NextRequest) {
 }
 
 // Construir el prompt común para todos los proveedores
-function buildPrompt(productData: any, keywords: any[]): string {
-  return `Analiza esta publicación de MercadoLibre y los keywords trending de la categoría.
+function buildPrompt(productData: any, keywords: any[], isReanalysis: boolean = false): string {
+  const contextNote = isReanalysis
+    ? `\n⚠️ IMPORTANTE: Este es un RE-ANÁLISIS. El título y descripción que ves ya fueron optimizados previamente por IA. Tu tarea es EVOLUCIONAR estas sugerencias previas, no partir de cero. Busca nuevas oportunidades de mejora basándote en lo ya optimizado.\n`
+    : `\n📝 Este es el PRIMER ANÁLISIS de esta publicación. Analiza el título y descripción originales de MercadoLibre.\n`
 
+  return `Analiza esta publicación de MercadoLibre y los keywords trending de la categoría.
+${contextNote}
 PRODUCTO:
 Título: ${productData.title}
 Descripción: ${productData.description?.plain_text || 'Sin descripción'}
@@ -285,11 +319,14 @@ TAREA:
 
 3. Genera sugerencias concretas de mejora:
    - Sugerencia de título optimizado (máximo 60 caracteres, sin keyword stuffing)
+   ${isReanalysis ? '   - Si es re-análisis: EVOLUCIONA el título previo, no lo reescribas desde cero' : ''}
    - Descripción COMPLETA optimizada (no solo mejoras, sino la descripción completa reescrita incorporando keywords relevantes de forma natural, manteniendo la información original y agregando detalles útiles)
+   ${isReanalysis ? '   - Si es re-análisis: MEJORA la descripción previa, agregando más detalles o keywords nuevos' : ''}
    - Atributos que podrían estar faltando
 
 IMPORTANTE sobre la descripción:
 - Genera una descripción COMPLETA y lista para usar, no solo sugerencias
+${isReanalysis ? '- Si es re-análisis: Parte de la versión optimizada previa y MEJÓRALA aún más, no la reescribas completamente desde cero\n- Identifica qué keywords o detalles nuevos se pueden agregar' : ''}
 - Incorpora keywords relevantes naturalmente
 - Mantén toda la información importante del producto
 - Agrega detalles que puedan ayudar a la conversión
@@ -571,6 +608,13 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Obtener el análisis actual antes de eliminarlo para registrarlo en histórico
+    const { data: currentAnalysis } = await supabase
+      .from('product_ai_analysis')
+      .select('*')
+      .eq('product_id', product.id)
+      .single()
+
     // Eliminar el análisis
     const { error: deleteError } = await supabase
       .from('product_ai_analysis')
@@ -585,12 +629,154 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Registrar la eliminación en el histórico
+    if (currentAnalysis) {
+      const deletionHistoryData = {
+        product_id: product.id,
+        suggested_title: currentAnalysis.suggested_title,
+        suggested_description: currentAnalysis.suggested_description,
+        improvements_explanation: currentAnalysis.improvements_explanation,
+        overall_score: currentAnalysis.overall_score,
+        summary: '[ELIMINADO] Análisis eliminado manualmente. Se empezó de cero.',
+        keyword_analysis: currentAnalysis.keyword_analysis,
+        suggestions: currentAnalysis.suggestions,
+        ai_provider: currentAnalysis.ai_provider,
+        analyzed_at: new Date().toISOString()
+      }
+
+      const { error: historyError } = await supabase
+        .from('product_ai_analysis_history')
+        .insert(deletionHistoryData)
+
+      if (historyError) {
+        console.error('Error guardando eliminación en histórico:', historyError)
+        // No retornar error, el análisis fue eliminado correctamente
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Análisis eliminado correctamente'
     })
   } catch (error) {
     console.error('Error in DELETE /api/meli/analyze-listing:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: Restaurar un análisis del histórico como actual
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { history_id, product_id } = body
+
+    if (!history_id || !product_id) {
+      return NextResponse.json(
+        { error: 'history_id and product_id are required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Buscar el análisis en el histórico
+    const { data: historicalAnalysis, error: fetchError } = await supabase
+      .from('product_ai_analysis_history')
+      .select('*')
+      .eq('id', history_id)
+      .single()
+
+    if (fetchError || !historicalAnalysis) {
+      console.error('Error buscando análisis histórico:', fetchError)
+      return NextResponse.json(
+        { error: 'Historical analysis not found' },
+        { status: 404 }
+      )
+    }
+
+    // Verificar que el análisis pertenezca al producto correcto y al usuario
+    const { data: product, error: productError } = await supabase
+      .from('meli_products')
+      .select('id, connection_id, meli_connections(user_id)')
+      .eq('meli_product_id', product_id)
+      .single()
+
+    if (productError || !product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    // @ts-ignore - Verificar propiedad
+    if (product.meli_connections?.user_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    // Restaurar el análisis como actual (UPSERT)
+    const restoreData = {
+      product_id: historicalAnalysis.product_id,
+      suggested_title: historicalAnalysis.suggested_title,
+      suggested_description: historicalAnalysis.suggested_description,
+      improvements_explanation: historicalAnalysis.improvements_explanation,
+      overall_score: historicalAnalysis.overall_score,
+      summary: historicalAnalysis.summary,
+      keyword_analysis: historicalAnalysis.keyword_analysis,
+      suggestions: historicalAnalysis.suggestions,
+      ai_provider: historicalAnalysis.ai_provider,
+      analyzed_at: new Date().toISOString()
+    }
+
+    const { error: restoreError } = await supabase
+      .from('product_ai_analysis')
+      .upsert(restoreData, {
+        onConflict: 'product_id'
+      })
+
+    if (restoreError) {
+      console.error('Error restaurando análisis:', restoreError)
+      return NextResponse.json(
+        { error: 'Error restoring analysis' },
+        { status: 500 }
+      )
+    }
+
+    // Crear registro en el histórico indicando la restauración
+    const historyData = {
+      ...restoreData,
+      summary: `[RESTAURADO] Análisis del ${new Date(historicalAnalysis.analyzed_at).toLocaleDateString('es-AR')} restaurado como actual`
+    }
+
+    const { error: historyError } = await supabase
+      .from('product_ai_analysis_history')
+      .insert(historyData)
+
+    if (historyError) {
+      console.error('Error guardando en histórico:', historyError)
+      // No retornar error, el análisis fue restaurado correctamente
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Análisis restaurado correctamente',
+      analysis: restoreData
+    })
+  } catch (error) {
+    console.error('Error in PUT /api/meli/analyze-listing:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
