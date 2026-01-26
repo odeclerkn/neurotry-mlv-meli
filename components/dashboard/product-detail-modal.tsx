@@ -20,11 +20,10 @@ interface ProductDetailModalProps {
 export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
   const [keywords, setKeywords] = useState<any[]>([])
   const [loadingKeywords, setLoadingKeywords] = useState(false)
-  const [keywordsSource, setKeywordsSource] = useState<string>('')
   const [competitors, setCompetitors] = useState<any[]>([])
-  const [loadingCompetitors, setLoadingCompetitors] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
+  const [deletingAnalysis, setDeletingAnalysis] = useState(false)
   const [aiProvider, setAiProvider] = useState<string>('')
   const [analyzedAt, setAnalyzedAt] = useState<string>('')
 
@@ -54,7 +53,6 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     console.log('Fetching keywords para categoría:', product.category_id)
     setLoadingKeywords(true)
     setKeywords([])
-    setKeywordsSource('')
     try {
       const response = await fetch(`/api/meli/trending-keywords?category_id=${product.category_id}`)
       console.log('Response status:', response.status)
@@ -63,7 +61,6 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         const data = await response.json()
         console.log('Keywords recibidos:', data)
         setKeywords(data.keywords || [])
-        setKeywordsSource(data.source || '')
       } else {
         console.error('Response no OK:', response.status)
       }
@@ -78,7 +75,6 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     if (!product?.meli_product_id) return
 
     console.log('Fetching competidores para:', product.meli_product_id)
-    setLoadingCompetitors(true)
     try {
       const response = await fetch(`/api/meli/similar-products?product_id=${product.meli_product_id}`)
       if (response.ok) {
@@ -90,8 +86,6 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       }
     } catch (error) {
       console.error('Error fetching competitors:', error)
-    } finally {
-      setLoadingCompetitors(false)
     }
   }
 
@@ -147,6 +141,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         console.log('Análisis recibido:', data)
         setAnalysis(data.analysis)
         setAiProvider(data.provider || 'unknown')
+        setAnalyzedAt(new Date().toISOString())
       } else {
         console.error('Error en análisis:', response.status)
       }
@@ -154,6 +149,35 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       console.error('Error fetching analysis:', error)
     } finally {
       setLoadingAnalysis(false)
+    }
+  }
+
+  const deleteAnalysis = async () => {
+    if (!product?.meli_product_id) return
+
+    if (!confirm('¿Estás seguro de que quieres eliminar este análisis?')) return
+
+    console.log('Eliminando análisis...')
+    setDeletingAnalysis(true)
+    try {
+      const response = await fetch(`/api/meli/analyze-listing?product_id=${product.meli_product_id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        console.log('Análisis eliminado correctamente')
+        setAnalysis(null)
+        setAiProvider('')
+        setAnalyzedAt('')
+      } else {
+        console.error('Error eliminando análisis:', response.status)
+        alert('Error al eliminar el análisis. Por favor, intenta de nuevo.')
+      }
+    } catch (error) {
+      console.error('Error deleting analysis:', error)
+      alert('Error al eliminar el análisis. Por favor, intenta de nuevo.')
+    } finally {
+      setDeletingAnalysis(false)
     }
   }
 
@@ -283,31 +307,48 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
             </div>
           </div>
 
-          {/* Keywords Trending */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-sans font-semibold text-primary-900">
-                  Keywords Trending de la Categoría
-                </h4>
-                {keywordsSource && keywords.length > 0 && (
-                  <Badge variant="info" className="text-xs">
-                    {keywordsSource === 'trends' ? 'API Trends' : 'Top Vendidos'}
-                  </Badge>
+          {/* Botón de análisis y estado */}
+          {keywords.length > 0 && (
+            <div className="flex items-center justify-between gap-4 bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={fetchAnalysis}
+                  disabled={loadingAnalysis || deletingAnalysis}
+                  className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 transition-colors font-sans font-semibold text-sm"
+                >
+                  {loadingAnalysis ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Analizando...
+                    </span>
+                  ) : (
+                    analysis ? '🔄 Re-analizar con IA' : '🤖 Analizar con IA'
+                  )}
+                </button>
+                {analysis && (
+                  <button
+                    onClick={deleteAnalysis}
+                    disabled={loadingAnalysis || deletingAnalysis}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors font-sans font-semibold text-sm"
+                  >
+                    {deletingAnalysis ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Eliminando...
+                      </span>
+                    ) : (
+                      '🗑️ Borrar análisis'
+                    )}
+                  </button>
                 )}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
                 {aiProvider && analysis && (
-                  <>
-                    <Badge variant="success" className="text-xs">
-                      {aiProvider === 'anthropic' && '🤖 Analizado con Claude'}
-                      {aiProvider === 'openai' && '🤖 Analizado con GPT-4'}
-                      {aiProvider === 'gemini' && '🤖 Analizado con Gemini'}
-                      {aiProvider === 'basic' && '📊 Análisis Básico'}
-                    </Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-body text-neutral-700">
+                      Analizado con {aiProvider === 'anthropic' ? 'Claude' : aiProvider === 'openai' ? 'GPT-4' : aiProvider === 'gemini' ? 'Gemini' : 'análisis básico'}
+                    </span>
                     {analyzedAt && (
-                      <span className="text-xs text-neutral-500">
-                        {new Date(analyzedAt).toLocaleDateString('es-AR', {
+                      <span className="text-sm font-body text-neutral-500">
+                        el {new Date(analyzedAt).toLocaleDateString('es-AR', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -316,19 +357,20 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                         })}
                       </span>
                     )}
-                  </>
-                )}
-                {keywords.length > 0 && (
-                  <button
-                    onClick={fetchAnalysis}
-                    disabled={loadingAnalysis}
-                    className="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 transition-colors"
-                  >
-                    {loadingAnalysis ? 'Analizando...' : (analysis ? '🔄 Re-analizar con IA' : '🤖 Analizar con IA')}
-                  </button>
+                  </div>
                 )}
               </div>
             </div>
+          )}
+
+          {/* Keywords de la categoría */}
+          <div>
+            <h4 className="text-lg font-sans font-semibold text-primary-900 mb-1">
+              Keywords de tu categoría
+            </h4>
+            <p className="text-sm font-body text-neutral-600 mb-3">
+              Términos más buscados o usados por productos exitosos. El score (ej: 8/10) indica qué tan relevante es cada keyword para tu producto específico.
+            </p>
             {loadingKeywords ? (
               <Alert variant="info">
                 <AlertDescription>
@@ -339,12 +381,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                 </AlertDescription>
               </Alert>
             ) : keywords.length > 0 ? (
-              <div className="mb-2">
-                <p className="text-xs font-body text-neutral-500">
-                  Categoría: {product.category_id}
-                </p>
-              </div>
-            ) && (
+              <>
               <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
                 <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
                   <div className="flex items-center gap-2">
@@ -402,46 +439,49 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                         key={index}
                         className={`flex items-center justify-between bg-white p-3 rounded-lg border transition-colors ${borderColor}`}
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-sans font-bold text-sm">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex items-center justify-center w-8 h-8 flex-shrink-0 rounded-full bg-primary-100 text-primary-700 font-sans font-bold text-sm">
                             {index + 1}
                           </div>
-                          <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div
                               className={`w-3 h-3 rounded-full ${statusColor} flex-shrink-0`}
                               title={statusTitle}
                             ></div>
-                            <div className="flex flex-col flex-1">
-                              <span className="font-body text-sm text-neutral-900">
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span
+                                className="font-body text-sm text-neutral-900 truncate"
+                                title={kw.keyword}
+                              >
                                 {kw.keyword}
                               </span>
-                              {kwAnalysis && (
-                                <span className="text-xs text-neutral-500 truncate">
+                              {kwAnalysis && kwAnalysis.reason && (
+                                <span
+                                  className="text-xs text-neutral-500 truncate cursor-help"
+                                  title={`Razón: ${kwAnalysis.reason}`}
+                                >
                                   {kwAnalysis.reason}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end ml-2">
+                        <div className="flex flex-col items-end ml-2 flex-shrink-0">
                           {kwAnalysis && (
-                            <div className="text-xs font-semibold text-primary-700 mb-1">
+                            <div
+                              className="px-2 py-1 bg-primary-100 rounded text-xs font-semibold text-primary-700 whitespace-nowrap"
+                              title={`Score de relevancia: ${kwAnalysis.score} de 10. ${kwAnalysis.reason}`}
+                            >
                               {kwAnalysis.score}/10
                             </div>
                           )}
-                          <div className="text-xs font-body text-neutral-600">
-                            {keywordsSource === 'products' ? (
-                              <span>{kw.searches} menciones</span>
-                            ) : (
-                              <span className="text-primary-700 font-semibold">Trending</span>
-                            )}
-                          </div>
                         </div>
                       </div>
                     )
                   })}
                 </div>
               </div>
+              </>
             ) : (
               <Alert variant="info">
                 <AlertDescription>
@@ -480,17 +520,27 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                 </div>
               )}
 
-              {analysis.suggestions.descriptionImprovements && analysis.suggestions.descriptionImprovements.length > 0 && (
+              {analysis.suggestions.optimizedDescription && (
                 <div className="mb-4">
-                  <p className="text-xs font-body text-neutral-600 mb-2">Mejoras para la descripción:</p>
-                  <ul className="space-y-2">
-                    {analysis.suggestions.descriptionImprovements.map((suggestion: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm font-body text-neutral-700 bg-white p-2 rounded border border-purple-100">
-                        <span className="text-purple-500 font-bold">•</span>
-                        <span>{suggestion}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-xs font-body text-neutral-600 mb-1">Descripción optimizada (lista para usar):</p>
+                  <div className="bg-white p-4 rounded-lg border border-purple-200 max-h-64 overflow-y-auto">
+                    <p className="text-sm font-body text-neutral-900 whitespace-pre-wrap">
+                      {analysis.suggestions.optimizedDescription}
+                    </p>
+                  </div>
+                  {analysis.suggestions.descriptionImprovements && analysis.suggestions.descriptionImprovements.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-body text-neutral-500 mb-1">Cambios realizados:</p>
+                      <ul className="space-y-1">
+                        {analysis.suggestions.descriptionImprovements.map((improvement: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs font-body text-neutral-600">
+                            <span className="text-purple-500">•</span>
+                            <span>{improvement}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 

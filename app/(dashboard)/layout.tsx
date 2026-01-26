@@ -39,6 +39,12 @@ export default async function DashboardLayout({
                 >
                   Dashboard
                 </Link>
+                <Link
+                  href="/value-proposition"
+                  className="font-body text-neutral-700 hover:text-primary-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors"
+                >
+                  💡 ¿Por qué optimizar?
+                </Link>
               </nav>
             </div>
 

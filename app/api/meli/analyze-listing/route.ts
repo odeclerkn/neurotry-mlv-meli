@@ -212,8 +212,8 @@ export async function POST(request: NextRequest) {
       .upsert({
         product_id: dbProduct.id,
         suggested_title: analysis.suggestions?.optimizedTitle || null,
-        suggested_description: analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
-        improvements_explanation: analysis.summary || null,
+        suggested_description: analysis.suggestions?.optimizedDescription || analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
+        improvements_explanation: analysis.suggestions?.descriptionImprovements?.join('\n') || analysis.summary || null,
         overall_score: analysis.overallScore || 0,
         summary: analysis.summary || null,
         keyword_analysis: analysis.keywordAnalysis || [],
@@ -274,8 +274,17 @@ TAREA:
 
 3. Genera sugerencias concretas de mejora:
    - Sugerencia de título optimizado (máximo 60 caracteres, sin keyword stuffing)
-   - Sugerencias para mejorar la descripción incorporando keywords relevantes naturalmente
+   - Descripción COMPLETA optimizada (no solo mejoras, sino la descripción completa reescrita incorporando keywords relevantes de forma natural, manteniendo la información original y agregando detalles útiles)
    - Atributos que podrían estar faltando
+
+IMPORTANTE sobre la descripción:
+- Genera una descripción COMPLETA y lista para usar, no solo sugerencias
+- Incorpora keywords relevantes naturalmente
+- Mantén toda la información importante del producto
+- Agrega detalles que puedan ayudar a la conversión
+- Usa un tono profesional y claro
+- Estructura con párrafos cortos para facilitar la lectura
+- Incluye garantía, envío o detalles importantes si corresponde
 
 Responde ÚNICAMENTE en formato JSON con esta estructura exacta:
 {
@@ -290,7 +299,8 @@ Responde ÚNICAMENTE en formato JSON con esta estructura exacta:
   ],
   "suggestions": {
     "optimizedTitle": "string",
-    "descriptionImprovements": ["string"],
+    "optimizedDescription": "string (descripción completa optimizada)",
+    "descriptionImprovements": ["string (resumen de cambios realizados)"],
     "missingAttributes": ["string"]
   },
   "overallScore": number,
@@ -497,6 +507,70 @@ async function basicAnalysis(product_id: string, keywords: any[]) {
     console.error('Error in basicAnalysis:', error)
     return NextResponse.json(
       { error: 'Error en análisis básico' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE: Eliminar análisis guardado de un producto
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const meliProductId = searchParams.get('product_id')
+
+    if (!meliProductId) {
+      return NextResponse.json(
+        { error: 'product_id is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Buscar el producto
+    const { data: product, error: productError } = await supabase
+      .from('meli_products')
+      .select('id')
+      .eq('meli_product_id', meliProductId)
+      .single()
+
+    if (productError || !product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    // Eliminar el análisis
+    const { error: deleteError } = await supabase
+      .from('product_ai_analysis')
+      .delete()
+      .eq('product_id', product.id)
+
+    if (deleteError) {
+      console.error('Error eliminando análisis:', deleteError)
+      return NextResponse.json(
+        { error: 'Error deleting analysis' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Análisis eliminado correctamente'
+    })
+  } catch (error) {
+    console.error('Error in DELETE /api/meli/analyze-listing:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
