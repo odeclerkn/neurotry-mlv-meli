@@ -24,15 +24,14 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   const [competitors, setCompetitors] = useState<any[]>([])
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
+  const [currentLoadingProductId, setCurrentLoadingProductId] = useState<string | null>(null)
   const [deletingAnalysis, setDeletingAnalysis] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [aiProvider, setAiProvider] = useState<string>('')
   const [analyzedAt, setAnalyzedAt] = useState<string>('')
   const [analysisHistory, setAnalysisHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     if (isOpen && product) {
@@ -42,6 +41,11 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       setAnalyzedAt('')
       setAnalysisHistory([])
       setShowHistory(false)
+
+      // Solo mostrar loading si este producto está siendo analizado
+      if (currentLoadingProductId && currentLoadingProductId !== product.meli_product_id) {
+        setLoadingAnalysis(false)
+      }
 
       if (product.category_id) {
         fetchKeywords()
@@ -157,6 +161,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
 
     console.log('Analizando publicación con IA...')
     setLoadingAnalysis(true)
+    setCurrentLoadingProductId(product.meli_product_id)
     try {
       const response = await fetch('/api/meli/analyze-listing', {
         method: 'POST',
@@ -184,18 +189,22 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       console.error('Error fetching analysis:', error)
     } finally {
       setLoadingAnalysis(false)
+      setCurrentLoadingProductId(null)
     }
   }
 
-  const confirmDelete = () => {
-    setShowDeleteConfirm(true)
-  }
-
-  const deleteAnalysis = async () => {
+  const confirmDelete = async () => {
     if (!product?.meli_product_id) return
 
+    const confirmed = window.confirm(
+      '¿Estás seguro de eliminar este análisis?\n\n' +
+      'Se eliminará el análisis actual pero el histórico se preservará. ' +
+      'Podrás restaurar cualquier análisis previo cuando quieras.'
+    )
+
+    if (!confirmed) return
+
     console.log('🔴 Eliminando análisis...')
-    setShowDeleteConfirm(false)
     setDeletingAnalysis(true)
     try {
       const response = await fetch(`/api/meli/analyze-listing?product_id=${product.meli_product_id}`, {
@@ -210,7 +219,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         setAnalysis(null)
         setAiProvider('')
         setAnalyzedAt('')
-        // El histórico se mantiene (no se borra)
+        await fetchAnalysisHistory()
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
       } else {
@@ -220,17 +229,26 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       }
     } catch (error) {
       console.error('🔴 Error deleting analysis:', error)
-      alert('Error al eliminar el análisis. Por favor, verifica la consola.')
+      alert('Error al eliminar el análisis.')
     } finally {
       setDeletingAnalysis(false)
     }
   }
 
-  const restoreAnalysis = async (historyId: string) => {
+  const confirmRestore = async (historyId: string) => {
     if (!product?.meli_product_id) return
+
+    const confirmed = window.confirm(
+      '¿Restaurar este análisis como actual?\n\n' +
+      'Este análisis se establecerá como actual, reemplazando el que tenés ahora. ' +
+      'El histórico completo se mantendrá.'
+    )
+
+    if (!confirmed) return
 
     console.log('♻️ Restaurando análisis:', historyId)
     setRestoringId(historyId)
+
     try {
       const response = await fetch('/api/meli/analyze-listing', {
         method: 'PUT',
@@ -245,24 +263,20 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
 
       if (response.ok) {
         const data = await response.json()
-        console.log('🟢 Análisis restaurado:', data)
+        console.log('🟢 Análisis restaurado correctamente:', data)
         // Recargar análisis actual y histórico
         await fetchSavedAnalysis()
         await fetchAnalysisHistory()
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
-        setNotification({ message: 'Análisis restaurado correctamente', type: 'success' })
-        setTimeout(() => setNotification(null), 3000)
       } else {
         const errorData = await response.json()
         console.error('🔴 Error restaurando:', errorData)
-        setNotification({ message: `Error al restaurar: ${errorData.error || 'Error desconocido'}`, type: 'error' })
-        setTimeout(() => setNotification(null), 5000)
+        alert(`Error al restaurar: ${errorData.error || 'Error desconocido'}`)
       }
     } catch (error) {
       console.error('🔴 Error restoring analysis:', error)
-      setNotification({ message: 'Error al restaurar el análisis', type: 'error' })
-      setTimeout(() => setNotification(null), 5000)
+      alert('Error al restaurar el análisis')
     } finally {
       setRestoringId(null)
     }
@@ -809,7 +823,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                       {!(idx === 0 && analysis) && (
                         <div className="mt-3 flex justify-end">
                           <button
-                            onClick={() => restoreAnalysis(hist.id)}
+                            onClick={() => confirmRestore(hist.id)}
                             disabled={restoringId === hist.id}
                             className="px-3 py-1.5 bg-blue-500 text-white text-xs font-sans font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                           >
@@ -895,94 +909,6 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       </DialogContent>
 
     </Dialog>
-
-      {/* Modal de confirmación para borrar - Completamente fuera del Dialog */}
-      {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div
-            className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-2xl border-2 border-neutral-200"
-            style={{ zIndex: 10000 }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🗑️</span>
-              </div>
-              <h3 className="text-xl font-sans font-bold text-neutral-900">
-                ¿Eliminar análisis?
-              </h3>
-            </div>
-            <p className="text-sm font-body text-neutral-700 mb-6 ml-15">
-              Se eliminará el análisis de IA para este producto. El histórico se preservará y podrás restaurar cualquier análisis previo cuando quieras.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  console.log('❌ Cancelar eliminar análisis')
-                  setShowDeleteConfirm(false)
-                }}
-                className="px-5 py-2.5 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors font-sans font-semibold text-sm border border-neutral-300"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  console.log('✅ Confirmar eliminar análisis')
-                  setShowDeleteConfirm(false)
-                  setTimeout(() => deleteAnalysis(), 100)
-                }}
-                className="px-5 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-sans font-semibold text-sm shadow-lg"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de notificación (éxito/error) */}
-      {notification && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div
-            className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-2xl border-2 border-neutral-200"
-            style={{ zIndex: 10000 }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                notification.type === 'success' ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <span className="text-2xl">
-                  {notification.type === 'success' ? '✅' : '❌'}
-                </span>
-              </div>
-              <h3 className="text-xl font-sans font-bold text-neutral-900">
-                {notification.type === 'success' ? 'Éxito' : 'Error'}
-              </h3>
-            </div>
-            <p className="text-sm font-body text-neutral-700 mb-6 ml-15">
-              {notification.message}
-            </p>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setNotification(null)}
-                className={`px-5 py-2.5 text-white rounded-lg hover:opacity-90 transition-colors font-sans font-semibold text-sm shadow-lg ${
-                  notification.type === 'success' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }

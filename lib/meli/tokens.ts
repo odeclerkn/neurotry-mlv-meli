@@ -369,6 +369,70 @@ export async function saveMeliProducts(connectionId: string, products: any[]) {
   const newCount = productsData.filter(p => p.is_new).length
   const updatedCount = productsData.filter(p => p.is_updated).length
 
+  // Manejar análisis cuando cambian título o descripción
+  for (const productData of productsData) {
+    if (productData.is_updated) {
+      const existing = existingMap.get(productData.meli_product_id)
+      if (!existing) continue
+
+      // Verificar si cambió título o descripción
+      const titleChanged = existing.title !== productData.title
+      const descriptionChanged = existing.description !== productData.description
+
+      if (titleChanged || descriptionChanged) {
+        // Buscar el producto recién guardado para obtener su ID
+        const savedProduct = (data as MeliProduct[])?.find(
+          p => p.meli_product_id === productData.meli_product_id
+        )
+        if (!savedProduct) continue
+
+        // Verificar si tiene análisis actual
+        const { data: currentAnalysis } = await supabase
+          .from('product_ai_analysis')
+          .select('*')
+          .eq('product_id', savedProduct.id)
+          .single()
+
+        if (currentAnalysis) {
+          // Construir mensaje de cambios
+          const changes: string[] = []
+          if (titleChanged) {
+            changes.push(`Título cambió de "${existing.title}" a "${productData.title}"`)
+          }
+          if (descriptionChanged) {
+            changes.push(`Descripción cambió`)
+          }
+
+          // Guardar análisis en histórico antes de eliminar
+          const historyData = {
+            product_id: savedProduct.id,
+            suggested_title: currentAnalysis.suggested_title,
+            suggested_description: currentAnalysis.suggested_description,
+            improvements_explanation: currentAnalysis.improvements_explanation,
+            overall_score: currentAnalysis.overall_score,
+            summary: `[ACTUALIZADO DESDE MELI] ${changes.join('. ')}. El análisis anterior ya no es válido para el producto actualizado.`,
+            keyword_analysis: currentAnalysis.keyword_analysis,
+            suggestions: currentAnalysis.suggestions,
+            ai_provider: currentAnalysis.ai_provider,
+            analyzed_at: now
+          }
+
+          await supabase
+            .from('product_ai_analysis_history')
+            .insert(historyData)
+
+          // Eliminar análisis actual ya que no corresponde al producto actualizado
+          await supabase
+            .from('product_ai_analysis')
+            .delete()
+            .eq('product_id', savedProduct.id)
+
+          console.log(`✓ Análisis eliminado para producto ${savedProduct.meli_product_id} (cambios desde MELI)`)
+        }
+      }
+    }
+  }
+
   return {
     products: data as MeliProduct[],
     stats: {

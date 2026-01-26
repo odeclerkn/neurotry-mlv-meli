@@ -279,19 +279,19 @@ export default async function ValuePropositionPage() {
               <ul className="space-y-2 text-sm font-body text-purple-900">
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 font-bold">✓</span>
-                  <span>Ya implementaste las sugerencias anteriores en MELI</span>
+                  <span><strong>Re-analizar múltiples veces:</strong> Podés re-analizar cuantas veces quieras sin publicar en MELI. Cada re-análisis mejora las sugerencias del anterior.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 font-bold">✓</span>
-                  <span>Quieres seguir mejorando un producto importante</span>
+                  <span><strong>Encontrar la versión óptima:</strong> Re-analizá 2, 3 o más veces hasta obtener el resultado que te convenza, y recién ahí publicalo en MELI.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 font-bold">✓</span>
-                  <span>Han pasado varias semanas y cambiaron las tendencias</span>
+                  <span><strong>Keywords actualizadas:</strong> Si han pasado varias semanas, re-analizar te dará sugerencias basadas en las tendencias más recientes.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-red-600 font-bold">✗</span>
-                  <span>NO re-analices sin implementar las sugerencias previas (la IA necesita evolucionar sobre cambios reales)</span>
+                  <span className="text-blue-600 font-bold">ℹ️</span>
+                  <span><strong>El histórico es tu aliado:</strong> Todas las versiones quedan guardadas, así que podés comparar, restaurar o combinar lo mejor de cada análisis.</span>
                 </li>
               </ul>
             </div>
@@ -390,6 +390,43 @@ export default async function ValuePropositionPage() {
                   <p className="text-xs font-body text-yellow-900">
                     <strong>⚠️ Importante:</strong> Esto es útil si querés "resetear" y empezar una nueva línea de evolución,
                     pero no pierdas las sugerencias anteriores - están en el histórico.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">¿Qué pasa al sincronizar cambios desde MELI?</h3>
+              <div className="bg-white border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-body text-neutral-700 mb-3">
+                  Si modificaste tu publicación directamente en MercadoLibre (título, descripción, etc.) y luego sincronizás:
+                </p>
+                <ul className="space-y-2 text-sm font-body text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">🔄</span>
+                    <span><strong>Se detectan los cambios:</strong> La aplicación compara el título/descripción actual de MELI con lo que tenía guardado</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600">📝</span>
+                    <span><strong>El análisis actual se borra:</strong> Ya no tiene sentido porque no corresponde al producto actual en MELI</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span><strong>El histórico se mantiene:</strong> Todas las versiones anteriores siguen disponibles como referencia de cómo llegaste hasta acá</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600">🏷️</span>
+                    <span><strong>Se registra el evento:</strong> Queda marcado en el histórico que se actualizó desde MELI, mostrando qué cambió</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">🆕</span>
+                    <span><strong>Podés analizar de nuevo:</strong> El próximo análisis usará los nuevos datos de MELI como punto de partida</span>
+                  </li>
+                </ul>
+                <div className="bg-blue-50 border border-blue-300 rounded p-3 mt-3">
+                  <p className="text-xs font-body text-blue-900">
+                    <strong>💡 Ventaja:</strong> El histórico te muestra toda la evolución del producto, incluyendo los cambios que hiciste
+                    manualmente en MELI. Es como un registro completo de la historia de optimización de cada publicación.
                   </p>
                 </div>
               </div>
@@ -1025,9 +1062,15 @@ export default async function ValuePropositionPage() {
                 <div>
                   <div className="font-sans font-bold text-neutral-900 mb-1">Escalabilidad</div>
                   <p className="text-sm font-body text-neutral-700">
-                    No importa si tenés 10 o 1000 productos. La herramienta analiza todo tu catálogo en minutos y te da
-                    sugerencias específicas para cada uno. Imposible de hacer manualmente.
+                    No importa si tenés 10 o 1000 productos. La herramienta te da sugerencias específicas para cada uno.
+                    Imposible de hacer manualmente.
                   </p>
+                  <div className="mt-2 bg-blue-50 border border-blue-300 rounded p-3">
+                    <p className="text-xs font-body text-blue-900">
+                      <strong>⏳ Próximamente:</strong> El análisis masivo automático de todo el catálogo está en desarrollo
+                      y se implementará próximamente. Por ahora, los análisis se realizan producto por producto según lo selecciones.
+                    </p>
+                  </div>
                 </div>
               </div>
 
