@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Poppins, Montserrat } from 'next/font/google'
 import './globals.css'
+import { NavigationProgress } from '@/components/navigation-progress'
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${poppins.variable} ${montserrat.variable} font-sans antialiased`}>
+        <NavigationProgress />
         {children}
       </body>
     </html>
