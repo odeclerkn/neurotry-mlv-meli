@@ -15,17 +15,22 @@ interface ProductDetailModalProps {
   product: any
   isOpen: boolean
   onClose: () => void
+  onAnalysisChange?: () => void
 }
 
-export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange }: ProductDetailModalProps) {
   const [keywords, setKeywords] = useState<any[]>([])
   const [loadingKeywords, setLoadingKeywords] = useState(false)
   const [competitors, setCompetitors] = useState<any[]>([])
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [deletingAnalysis, setDeletingAnalysis] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [aiProvider, setAiProvider] = useState<string>('')
   const [analyzedAt, setAnalyzedAt] = useState<string>('')
+  const [analysisHistory, setAnalysisHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     if (isOpen && product) {
@@ -33,6 +38,8 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       setAnalysis(null)
       setAiProvider('')
       setAnalyzedAt('')
+      setAnalysisHistory([])
+      setShowHistory(false)
 
       if (product.category_id) {
         fetchKeywords()
@@ -40,6 +47,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
       if (product.meli_product_id) {
         fetchCompetitors()
         fetchSavedAnalysis()
+        fetchAnalysisHistory()
       }
     }
   }, [isOpen, product])
@@ -121,6 +129,27 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     }
   }
 
+  const fetchAnalysisHistory = async () => {
+    if (!product?.meli_product_id) return
+
+    console.log('📜 Cargando histórico de análisis...')
+    setLoadingHistory(true)
+    try {
+      const response = await fetch(`/api/meli/analysis-history?product_id=${product.meli_product_id}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📜 Histórico recibido:', data)
+        setAnalysisHistory(data.history || [])
+      } else {
+        console.error('Error fetching history:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   const fetchAnalysis = async () => {
     if (!product?.meli_product_id || keywords.length === 0) return
 
@@ -142,6 +171,10 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         setAnalysis(data.analysis)
         setAiProvider(data.provider || 'unknown')
         setAnalyzedAt(new Date().toISOString())
+        // Recargar histórico para mostrar el nuevo análisis
+        fetchAnalysisHistory()
+        // Notificar cambio para refrescar la lista
+        if (onAnalysisChange) onAnalysisChange()
       } else {
         console.error('Error en análisis:', response.status)
       }
@@ -152,12 +185,15 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
     }
   }
 
+  const confirmDelete = () => {
+    setShowDeleteConfirm(true)
+  }
+
   const deleteAnalysis = async () => {
     if (!product?.meli_product_id) return
 
-    if (!confirm('¿Estás seguro de que quieres eliminar este análisis?')) return
-
     console.log('Eliminando análisis...')
+    setShowDeleteConfirm(false)
     setDeletingAnalysis(true)
     try {
       const response = await fetch(`/api/meli/analyze-listing?product_id=${product.meli_product_id}`, {
@@ -169,13 +205,13 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
         setAnalysis(null)
         setAiProvider('')
         setAnalyzedAt('')
+        // Notificar cambio para refrescar la lista
+        if (onAnalysisChange) onAnalysisChange()
       } else {
         console.error('Error eliminando análisis:', response.status)
-        alert('Error al eliminar el análisis. Por favor, intenta de nuevo.')
       }
     } catch (error) {
       console.error('Error deleting analysis:', error)
-      alert('Error al eliminar el análisis. Por favor, intenta de nuevo.')
     } finally {
       setDeletingAnalysis(false)
     }
@@ -327,7 +363,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                 </button>
                 {analysis && (
                   <button
-                    onClick={deleteAnalysis}
+                    onClick={confirmDelete}
                     disabled={loadingAnalysis || deletingAnalysis}
                     className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors font-sans font-semibold text-sm"
                   >
@@ -511,30 +547,64 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
               {analysis.suggestions.optimizedTitle && analysis.suggestions.optimizedTitle !== product.title && (
                 <div className="mb-4">
-                  <p className="text-xs font-body text-neutral-600 mb-1">Título optimizado sugerido:</p>
-                  <div className="bg-white p-3 rounded-lg border border-purple-200">
-                    <p className="text-sm font-body text-neutral-900">
-                      {analysis.suggestions.optimizedTitle}
-                    </p>
+                  <h5 className="text-sm font-sans font-bold text-purple-900 mb-3">Comparación de Títulos</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs font-body text-neutral-500 mb-2 flex items-center gap-1">
+                        <span className="text-red-500">✗</span> Título Actual
+                      </p>
+                      <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                        <p className="text-sm font-body text-neutral-900">
+                          {product.title}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-body text-neutral-500 mb-2 flex items-center gap-1">
+                        <span className="text-green-500">✓</span> Título Optimizado Sugerido
+                      </p>
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <p className="text-sm font-body text-neutral-900">
+                          {analysis.suggestions.optimizedTitle}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
               {analysis.suggestions.optimizedDescription && (
                 <div className="mb-4">
-                  <p className="text-xs font-body text-neutral-600 mb-1">Descripción optimizada (lista para usar):</p>
-                  <div className="bg-white p-4 rounded-lg border border-purple-200 max-h-64 overflow-y-auto">
-                    <p className="text-sm font-body text-neutral-900 whitespace-pre-wrap">
-                      {analysis.suggestions.optimizedDescription}
-                    </p>
+                  <h5 className="text-sm font-sans font-bold text-purple-900 mb-3">Comparación de Descripciones</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs font-body text-neutral-500 mb-2 flex items-center gap-1">
+                        <span className="text-red-500">✗</span> Descripción Actual
+                      </p>
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200 max-h-64 overflow-y-auto">
+                        <p className="text-sm font-body text-neutral-900 whitespace-pre-wrap">
+                          {product.description || 'Sin descripción'}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-body text-neutral-500 mb-2 flex items-center gap-1">
+                        <span className="text-green-500">✓</span> Descripción Optimizada (Lista para usar)
+                      </p>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200 max-h-64 overflow-y-auto">
+                        <p className="text-sm font-body text-neutral-900 whitespace-pre-wrap">
+                          {analysis.suggestions.optimizedDescription}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   {analysis.suggestions.descriptionImprovements && analysis.suggestions.descriptionImprovements.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-body text-neutral-500 mb-1">Cambios realizados:</p>
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs font-sans font-bold text-blue-900 mb-2">Cambios realizados:</p>
                       <ul className="space-y-1">
                         {analysis.suggestions.descriptionImprovements.map((improvement: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs font-body text-neutral-600">
-                            <span className="text-purple-500">•</span>
+                          <li key={idx} className="flex items-start gap-2 text-xs font-body text-blue-900">
+                            <span className="text-blue-600">•</span>
                             <span>{improvement}</span>
                           </li>
                         ))}
@@ -564,6 +634,101 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               {analysis.summary && (
                 <div className="mt-3 text-xs font-body text-neutral-600 bg-white p-3 rounded-lg border border-purple-100">
                   {analysis.summary}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Histórico de Análisis */}
+          {analysisHistory.length > 0 && (
+            <div className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📜</span>
+                  <h4 className="text-lg font-sans font-semibold text-amber-900">
+                    Histórico de Análisis
+                  </h4>
+                  <Badge variant="default" className="bg-amber-600 text-xs">
+                    {analysisHistory.length} {analysisHistory.length === 1 ? 'análisis' : 'análisis'}
+                  </Badge>
+                </div>
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="text-sm text-amber-700 hover:text-amber-900 font-sans font-semibold"
+                >
+                  {showHistory ? '▼ Ocultar' : '▶ Ver histórico'}
+                </button>
+              </div>
+
+              {showHistory && (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {analysisHistory.map((hist: any, idx: number) => (
+                    <div key={hist.id} className="bg-white p-4 rounded-lg border border-amber-100 hover:border-amber-300 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6 h-6 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <span className="text-xs font-body text-neutral-500">
+                              {new Date(hist.analyzed_at).toLocaleDateString('es-AR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="default" className="text-xs">
+                                {hist.ai_provider === 'anthropic' ? 'Claude' :
+                                 hist.ai_provider === 'openai' ? 'GPT-4' :
+                                 hist.ai_provider === 'gemini' ? 'Gemini' : 'Básico'}
+                              </Badge>
+                              <Badge
+                                variant={
+                                  hist.overall_score >= 7 ? 'success' :
+                                  hist.overall_score >= 4 ? 'warning' : 'error'
+                                }
+                                className="text-xs"
+                              >
+                                Score: {hist.overall_score}/10
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        {idx === 0 && (
+                          <Badge variant="default" className="bg-green-600 text-xs">
+                            Actual
+                          </Badge>
+                        )}
+                      </div>
+
+                      {hist.summary && (
+                        <div className="mt-2">
+                          <p className="text-xs font-body text-neutral-600 bg-neutral-50 p-2 rounded">
+                            {hist.summary}
+                          </p>
+                        </div>
+                      )}
+
+                      {hist.suggested_title && hist.suggested_title !== product.title && (
+                        <div className="mt-2">
+                          <p className="text-xs font-body text-neutral-500 mb-1">Título sugerido:</p>
+                          <p className="text-xs font-body text-neutral-700 italic">
+                            "{hist.suggested_title}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {loadingHistory && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-sm text-amber-700">Cargando histórico...</span>
                 </div>
               )}
             </div>
@@ -622,6 +787,34 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           </div>
         </div>
       </DialogContent>
+
+      {/* Modal de confirmación para borrar */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-sans font-bold text-neutral-900 mb-3">
+              ¿Eliminar análisis?
+            </h3>
+            <p className="text-sm font-body text-neutral-700 mb-6">
+              Se eliminará el análisis de IA para este producto. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-300 transition-colors font-sans font-semibold text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={deleteAnalysis}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-sans font-semibold text-sm"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   )
 }

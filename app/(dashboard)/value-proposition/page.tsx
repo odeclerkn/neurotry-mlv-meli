@@ -578,52 +578,6 @@ export default async function ValuePropositionPage() {
               </div>
             </div>
 
-            {/* Costos */}
-            <div>
-              <h3 className="font-sans font-bold text-lg text-neutral-900 mb-3">Costos Operacionales</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-neutral-200 bg-neutral-50">
-                      <th className="text-left p-2 font-sans font-semibold">Servicio</th>
-                      <th className="text-left p-2 font-sans font-semibold">Costo por Análisis</th>
-                      <th className="text-left p-2 font-sans font-semibold">Notas</th>
-                    </tr>
-                  </thead>
-                  <tbody className="font-body text-neutral-700">
-                    <tr className="border-b border-neutral-200">
-                      <td className="p-2">MercadoLibre API</td>
-                      <td className="p-2 text-green-600 font-semibold">Gratis</td>
-                      <td className="p-2">~10K requests/hora</td>
-                    </tr>
-                    <tr className="border-b border-neutral-200">
-                      <td className="p-2">Anthropic Claude</td>
-                      <td className="p-2">~$0.003-0.006</td>
-                      <td className="p-2">claude-3-5-sonnet</td>
-                    </tr>
-                    <tr className="border-b border-neutral-200">
-                      <td className="p-2">OpenAI GPT-4</td>
-                      <td className="p-2">~$0.004-0.008</td>
-                      <td className="p-2">gpt-4o</td>
-                    </tr>
-                    <tr className="border-b border-neutral-200">
-                      <td className="p-2">Google Gemini</td>
-                      <td className="p-2">~$0.002-0.004</td>
-                      <td className="p-2">gemini-1.5-pro</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2">Supabase</td>
-                      <td className="p-2 text-green-600 font-semibold">Gratis*</td>
-                      <td className="p-2">*Plan gratuito hasta 500MB</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-xs font-body text-neutral-600 mt-3">
-                Ejemplo: Analizar 100 productos con Claude ≈ $0.50 USD
-              </p>
-            </div>
-
             {/* Documentación Completa */}
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <h4 className="font-sans font-bold text-purple-900 mb-2">📚 Documentación Técnica Completa</h4>

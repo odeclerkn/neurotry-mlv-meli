@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { ProductDetailModal } from './product-detail-modal'
 
@@ -9,11 +10,17 @@ interface ProductsTableProps {
 }
 
 export function ProductsTable({ products }: ProductsTableProps) {
+  const router = useRouter()
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
 
   // Debug: mostrar en consola los productos con análisis (solo una vez)
   const productsWithAnalysis = products.filter((p: any) => p.product_ai_analysis)
   console.log(`📊 ProductsTable - Total: ${products.length}, Con análisis: ${productsWithAnalysis.length}`)
+
+  const handleAnalysisChange = () => {
+    console.log('🔄 Análisis cambiado, refrescando página...')
+    router.refresh()
+  }
 
   return (
     <>
@@ -177,6 +184,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
         product={selectedProduct}
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
+        onAnalysisChange={handleAnalysisChange}
       />
     </>
   )

@@ -206,27 +206,38 @@ export async function POST(request: NextRequest) {
 
     const analysis = JSON.parse(jsonMatch[0])
 
-    // Guardar análisis en la base de datos (UPSERT)
+    const analysisData = {
+      product_id: dbProduct.id,
+      suggested_title: analysis.suggestions?.optimizedTitle || null,
+      suggested_description: analysis.suggestions?.optimizedDescription || analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
+      improvements_explanation: analysis.suggestions?.descriptionImprovements?.join('\n') || analysis.summary || null,
+      overall_score: analysis.overallScore || 0,
+      summary: analysis.summary || null,
+      keyword_analysis: analysis.keywordAnalysis || [],
+      suggestions: analysis.suggestions || {},
+      ai_provider: provider,
+      analyzed_at: new Date().toISOString()
+    }
+
+    // Guardar análisis actual en la base de datos (UPSERT)
     const { error: saveError } = await supabase
       .from('product_ai_analysis')
-      .upsert({
-        product_id: dbProduct.id,
-        suggested_title: analysis.suggestions?.optimizedTitle || null,
-        suggested_description: analysis.suggestions?.optimizedDescription || analysis.suggestions?.descriptionImprovements?.join('\n\n') || null,
-        improvements_explanation: analysis.suggestions?.descriptionImprovements?.join('\n') || analysis.summary || null,
-        overall_score: analysis.overallScore || 0,
-        summary: analysis.summary || null,
-        keyword_analysis: analysis.keywordAnalysis || [],
-        suggestions: analysis.suggestions || {},
-        ai_provider: provider,
-        analyzed_at: new Date().toISOString()
-      }, {
+      .upsert(analysisData, {
         onConflict: 'product_id'
       })
 
     if (saveError) {
       console.error('Error guardando análisis en BD:', saveError)
       // No retornar error, solo loguear - el análisis se generó correctamente
+    }
+
+    // Guardar en histórico (siempre INSERT, nunca UPSERT)
+    const { error: historyError } = await supabase
+      .from('product_ai_analysis_history')
+      .insert(analysisData)
+
+    if (historyError) {
+      console.error('Error guardando análisis en histórico:', historyError)
     }
 
     return NextResponse.json({
@@ -469,26 +480,37 @@ async function basicAnalysis(product_id: string, keywords: any[]) {
       summary: 'Análisis básico completado. Configure una API key de IA para análisis avanzado.'
     }
 
-    // Guardar análisis básico en la BD
+    const basicAnalysisData = {
+      product_id: dbProduct.id,
+      suggested_title: analysis.suggestions.optimizedTitle,
+      suggested_description: analysis.suggestions.descriptionImprovements.join('\n\n'),
+      improvements_explanation: analysis.summary,
+      overall_score: analysis.overallScore,
+      summary: analysis.summary,
+      keyword_analysis: analysis.keywordAnalysis,
+      suggestions: analysis.suggestions,
+      ai_provider: 'basic',
+      analyzed_at: new Date().toISOString()
+    }
+
+    // Guardar análisis básico actual en la BD
     const { error: saveError } = await supabase
       .from('product_ai_analysis')
-      .upsert({
-        product_id: dbProduct.id,
-        suggested_title: analysis.suggestions.optimizedTitle,
-        suggested_description: analysis.suggestions.descriptionImprovements.join('\n\n'),
-        improvements_explanation: analysis.summary,
-        overall_score: analysis.overallScore,
-        summary: analysis.summary,
-        keyword_analysis: analysis.keywordAnalysis,
-        suggestions: analysis.suggestions,
-        ai_provider: 'basic',
-        analyzed_at: new Date().toISOString()
-      }, {
+      .upsert(basicAnalysisData, {
         onConflict: 'product_id'
       })
 
     if (saveError) {
       console.error('Error guardando análisis básico en BD:', saveError)
+    }
+
+    // Guardar en histórico
+    const { error: historyError } = await supabase
+      .from('product_ai_analysis_history')
+      .insert(basicAnalysisData)
+
+    if (historyError) {
+      console.error('Error guardando análisis básico en histórico:', historyError)
     }
 
     return NextResponse.json({
