@@ -686,12 +686,25 @@ export default async function ValuePropositionPage() {
                       1
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Sincronización de Productos</div>
-                      <p className="text-sm font-body text-neutral-700">
-                        La aplicación se conecta a MercadoLibre y obtiene toda la información de tus publicaciones: títulos,
-                        descripciones, precios, stock, imágenes y atributos. Usa la <em>API de Items de MELI</em> para traer
-                        los datos completos de cada producto (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/items/&#123;id&#125;</code>).
+                      <div className="font-sans font-bold text-neutral-900 mb-2">Sincronización de Productos</div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
+                        La aplicación se conecta a MercadoLibre usando la <em>API de Items de MELI</em> y obtiene toda la información
+                        de tus publicaciones activas.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-neutral-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">¿Qué información trae?</strong>
+                        <ul className="mt-2 space-y-1 ml-4">
+                          <li>• Título y descripción actuales de MELI</li>
+                          <li>• Precio, stock disponible y estado del producto</li>
+                          <li>• Atributos técnicos (marca, modelo, color, capacidad, etc.)</li>
+                          <li>• Categoría en la que está publicado</li>
+                          <li>• Imágenes y cantidad vendida</li>
+                        </ul>
+                        <p className="mt-2 text-neutral-700">
+                          <strong>Estado:</strong> Tus productos están guardados en la base de datos, pero las keywords
+                          trending <strong>aún NO están catalogadas</strong>. Solo tenés los datos crudos de tus publicaciones.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -702,45 +715,212 @@ export default async function ValuePropositionPage() {
                       2
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Obtención de Keywords Trending</div>
-                      <p className="text-sm font-body text-neutral-700">
-                        Para cada categoría de tus productos, la herramienta consulta las palabras clave más buscadas en
-                        MercadoLibre en este momento. Usa la <em>API de Trends de MELI</em> (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/trends/MLA/&#123;category_id&#125;</code>)
-                        para conocer qué términos están usando los compradores. Los resultados se guardan en caché por 24 horas.
+                      <div className="font-sans font-bold text-neutral-900 mb-2">Obtención de Keywords Trending</div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
+                        Para cada categoría de tus productos, la herramienta consulta las palabras clave <strong>más buscadas
+                        en este momento</strong> en MercadoLibre usando la <em>API de Trends de MELI</em>.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-neutral-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">¿Qué obtiene?</strong>
+                        <p className="mt-2">
+                          Una lista de términos populares que los compradores están buscando en tu categoría. Por ejemplo,
+                          si vendés celulares (categoría MLA1055), obtiene keywords como:
+                        </p>
+                        <ul className="mt-2 space-y-1 ml-4 text-neutral-700 font-mono text-xs">
+                          <li>• "5G" - 1000 búsquedas</li>
+                          <li>• "pantalla 120hz" - 950 búsquedas</li>
+                          <li>• "cámara 50mp" - 900 búsquedas</li>
+                          <li>• "batería 5000mah" - 850 búsquedas</li>
+                        </ul>
+                        <p className="mt-2 text-neutral-700">
+                          <strong>Estado:</strong> Tenés una lista de keywords trending, pero <strong>NO están catalogadas
+                          como relevantes o irrelevantes</strong> para tu producto específico. Son solo los términos populares
+                          de la categoría en general.
+                        </p>
+                        <p className="mt-2 text-blue-700">
+                          💡 Estos datos se guardan en caché por 24 horas para evitar consultas repetidas.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                <div className="border border-blue-300 rounded-lg p-4 bg-blue-50">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
                       3
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Análisis de Competidores</div>
-                      <p className="text-sm font-body text-neutral-700">
-                        La aplicación busca los productos más vendidos de tu misma categoría para identificar qué hacen bien.
-                        Usa la <em>API de Search de MELI</em> ordenando por cantidad vendida (endpoint <code className="text-xs bg-neutral-100 px-1 rounded">/sites/MLA/search?sort=sold_quantity_desc</code>)
-                        y extrae los keywords comunes en los títulos y descripciones de los top 10.
+                      <div className="font-sans font-bold text-neutral-900 mb-2">Análisis de Competidores</div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
+                        Este paso busca productos <strong>similares al tuyo que han tenido éxito</strong> (muchas ventas)
+                        para identificar patrones ganadores. Usa la <em>API de Search de MELI</em> ordenando por
+                        <strong> cantidad vendida</strong>.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-blue-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">Proceso detallado:</strong>
+
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <strong className="text-blue-800">1. Construcción de búsqueda inteligente:</strong>
+                            <p className="mt-1">
+                              Extrae los atributos clave de tu producto (marca, modelo) y construye una búsqueda.
+                              Por ejemplo: <span className="font-mono bg-blue-100 px-1">"Samsung Galaxy A54"</span>
+                            </p>
+                          </div>
+
+                          <div>
+                            <strong className="text-blue-800">2. Búsqueda de los más vendidos:</strong>
+                            <p className="mt-1">
+                              Busca en la misma categoría productos que contengan esas palabras clave, ordenados por
+                              <strong> más ventas</strong>. Obtiene los top 30 productos de la categoría.
+                            </p>
+                          </div>
+
+                          <div>
+                            <strong className="text-blue-800">3. Análisis de los top 10:</strong>
+                            <p className="mt-1">Toma los 10 más vendidos y analiza:</p>
+                            <ul className="mt-2 space-y-1 ml-4">
+                              <li>• <strong>Títulos completos</strong> de cada competidor exitoso</li>
+                              <li>• <strong>Keywords que usan</strong> esos títulos</li>
+                              <li>• <strong>Frecuencia de cada keyword</strong> (cuántos de los 10 lo usan)</li>
+                              <li>• <strong>Estructura</strong> que usan para organizar el título</li>
+                              <li>• <strong>Precio promedio</strong> de los competidores</li>
+                              <li>• <strong>Cantidad promedio vendida</strong></li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <strong className="text-blue-800">4. Extracción de patrones:</strong>
+                            <p className="mt-1">
+                              Identifica qué keywords aparecen con más frecuencia en los títulos de los que más venden.
+                              Ejemplo: Si 9 de 10 top sellers usan "5G" en el título, es una señal clara de que ese término
+                              es importante.
+                            </p>
+                          </div>
+
+                          <div>
+                            <strong className="text-blue-800">5. Detección de oportunidades:</strong>
+                            <p className="mt-1">
+                              Compara los keywords que usan los competidores exitosos con los que tenés en tu título actual
+                              para identificar <strong>cuáles te faltan</strong>.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 bg-yellow-50 border border-yellow-300 rounded p-2">
+                          <p className="text-yellow-900">
+                            <strong>Ejemplo de resultado:</strong> Si vendés un Samsung A54, el análisis podría encontrar que
+                            los top 10 competidores usan frecuentemente: "5G" (9/10), "120Hz" (7/10), "50MP" (7/10).
+                            Si tu título no incluye estos términos, son <strong>oportunidades de mejora</strong>.
+                          </p>
+                        </div>
+
+                        <p className="mt-3 text-neutral-700">
+                          <strong>Estado:</strong> Tenés keywords trending + patrones de competidores exitosos, pero
+                          <strong> AÚN NO están catalogadas</strong> específicamente para tu producto. Es información en bruto
+                          que necesita ser validada por la IA.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                <div className="border border-purple-300 rounded-lg p-4 bg-purple-50">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-sans font-bold flex-shrink-0">
                       4
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Análisis con Inteligencia Artificial</div>
-                      <p className="text-sm font-body text-neutral-700">
+                      <div className="font-sans font-bold text-neutral-900 mb-2">
+                        Análisis con Inteligencia Artificial
+                        <span className="ml-2 text-xs bg-purple-200 px-2 py-1 rounded">¡AQUÍ SE CATALOGAN LOS KEYWORDS!</span>
+                      </div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
                         Toda la información recopilada (tu producto, keywords trending, competidores exitosos) se envía a la IA
-                        (Claude de Anthropic, GPT-4 de OpenAI, o Gemini de Google). La IA analiza todo en conjunto y genera
-                        sugerencias específicas: título optimizado, descripción mejorada, score de calidad, y explicación
-                        detallada de por qué sugiere cada cambio. El proceso toma entre 5-10 segundos por producto.
+                        (Claude de Anthropic, GPT-4 de OpenAI, o Gemini de Google). La IA hace el trabajo más importante:
+                        <strong> validar semánticamente qué keywords son relevantes para TU producto específico</strong>.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-purple-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">¿Qué recibe la IA?</strong>
+                        <ul className="mt-2 space-y-1 ml-4">
+                          <li>• <strong>Datos de tu producto:</strong> título, descripción, atributos técnicos (marca, modelo, memoria, 5G, etc.)</li>
+                          <li>• <strong>Keywords trending:</strong> lista de términos populares en la categoría</li>
+                          <li>• <strong>Patrones de competidores:</strong> qué keywords usan los más vendidos</li>
+                        </ul>
+
+                        <div className="mt-3">
+                          <strong className="text-purple-800">¿Cómo cataloga cada keyword?</strong>
+                          <p className="mt-2">
+                            La IA <strong>compara semánticamente</strong> cada keyword trending contra los atributos reales
+                            de tu producto. Por ejemplo:
+                          </p>
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <strong className="text-green-800">Keyword: "5G"</strong>
+                            <ul className="mt-1 ml-4 space-y-1 text-green-900">
+                              <li>• ¿Está en los atributos del producto? → <strong>Sí</strong>, atributo NETWORK_5G = "Sí"</li>
+                              <li>• ¿Está en el título actual? → <strong>NO</strong></li>
+                              <li>• <strong>Conclusión:</strong> Relevante ✅ - Score: 9/10</li>
+                              <li>• <strong>Razón:</strong> "El producto tiene conectividad 5G según atributos"</li>
+                              <li>• <strong>Acción:</strong> Agregar al título optimizado</li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <strong className="text-yellow-800">Keyword: "pantalla 120hz"</strong>
+                            <ul className="mt-1 ml-4 space-y-1 text-yellow-900">
+                              <li>• ¿Está en los atributos? → <strong>NO</strong> (no hay atributo de refresh rate)</li>
+                              <li>• ¿El modelo Galaxy A54 tiene 120Hz? → <strong>Sí</strong> (conocimiento de la IA)</li>
+                              <li>• ¿Lo usan los competidores exitosos? → <strong>Sí</strong> (7 de 10)</li>
+                              <li>• <strong>Conclusión:</strong> Relevante ✅ - Score: 8/10</li>
+                              <li>• <strong>Razón:</strong> "El Galaxy A54 tiene pantalla 120Hz"</li>
+                              <li>• <strong>Acción:</strong> Agregar al título optimizado</li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-red-50 border border-red-200 rounded p-2">
+                            <strong className="text-red-800">Keyword: "envío gratis"</strong>
+                            <ul className="mt-1 ml-4 space-y-1 text-red-900">
+                              <li>• ¿Es una característica del producto? → <strong>NO</strong></li>
+                              <li>• ¿Es un atributo técnico? → <strong>NO</strong></li>
+                              <li>• Es una condición comercial, no del producto</li>
+                              <li>• <strong>Conclusión:</strong> NO relevante ❌ - Score: 2/10</li>
+                              <li>• <strong>Razón:</strong> "No es atributo del producto"</li>
+                              <li>• <strong>Acción:</strong> NO agregar al título</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <strong className="text-purple-800">¿En base a qué optimiza?</strong>
+                          <p className="mt-2">La IA combina múltiples fuentes de información:</p>
+                          <ul className="mt-2 space-y-1 ml-4">
+                            <li>• <strong>Atributos reales del producto</strong> (datos técnicos de MELI)</li>
+                            <li>• <strong>Conocimiento del modelo</strong> (sabe specs técnicas de productos conocidos)</li>
+                            <li>• <strong>Patrones de competidores</strong> (qué funciona para los que más venden)</li>
+                            <li>• <strong>Análisis semántico</strong> (distingue features reales vs marketing)</li>
+                          </ul>
+                        </div>
+
+                        <div className="mt-3">
+                          <strong className="text-purple-800">¿Qué genera?</strong>
+                          <ul className="mt-2 space-y-1 ml-4">
+                            <li>• <strong>Lista de keywords catalogados:</strong> cada uno con score, relevancia y explicación</li>
+                            <li>• <strong>Título optimizado:</strong> incorpora keywords relevantes que NO estaban en el original</li>
+                            <li>• <strong>Descripción completa reescrita:</strong> con keywords integrados naturalmente</li>
+                            <li>• <strong>Score global 0-10:</strong> qué tan optimizada está tu publicación</li>
+                            <li>• <strong>Explicación detallada:</strong> por qué sugiere cada cambio</li>
+                          </ul>
+                        </div>
+
+                        <p className="mt-3 text-purple-800 font-semibold">
+                          ⚡ Este paso toma 5-10 segundos y es donde la "magia" sucede: los keywords pasan de ser una lista
+                          genérica a sugerencias específicas y validadas para tu producto.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -751,12 +931,27 @@ export default async function ValuePropositionPage() {
                       5
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Guardado del Análisis</div>
-                      <p className="text-sm font-body text-neutral-700">
-                        El análisis se guarda en la base de datos de forma segura. Se actualiza el análisis actual del producto
-                        y se crea un registro en el histórico para que nunca pierdas las sugerencias previas. Cada usuario
-                        solo puede ver sus propios datos gracias a las políticas de seguridad Row Level Security.
+                      <div className="font-sans font-bold text-neutral-900 mb-2">Guardado del Análisis</div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
+                        El análisis completo se guarda en la base de datos de forma segura.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-neutral-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">¿Qué se guarda?</strong>
+                        <ul className="mt-2 space-y-1 ml-4">
+                          <li>• <strong>Keywords YA CATALOGADOS:</strong> con su relevancia, score y razón</li>
+                          <li>• <strong>Título optimizado sugerido</strong></li>
+                          <li>• <strong>Descripción completa optimizada</strong></li>
+                          <li>• <strong>Score de optimización 0-10</strong></li>
+                          <li>• <strong>Explicación de cambios sugeridos</strong></li>
+                          <li>• <strong>Proveedor de IA usado</strong> (Claude, GPT-4, Gemini)</li>
+                          <li>• <strong>Fecha y hora del análisis</strong></li>
+                        </ul>
+                        <p className="mt-3 text-neutral-700">
+                          Se actualiza el <strong>análisis actual</strong> del producto y se crea un <strong>registro en el
+                          histórico</strong> para que nunca pierdas las sugerencias previas. Cada usuario solo puede ver sus
+                          propios datos gracias a las políticas de seguridad.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -767,12 +962,31 @@ export default async function ValuePropositionPage() {
                       6
                     </div>
                     <div>
-                      <div className="font-sans font-bold text-neutral-900 mb-1">Visualización y Exportación</div>
-                      <p className="text-sm font-body text-neutral-700">
-                        Los análisis se muestran en tu dashboard de forma clara y organizada. Podés ver los detalles completos
-                        haciendo click en cada producto, comparar el histórico, restaurar versiones anteriores, y exportar
-                        todo a Excel para trabajar offline o compartir con tu equipo.
+                      <div className="font-sans font-bold text-neutral-900 mb-2">Visualización y Exportación</div>
+                      <p className="text-sm font-body text-neutral-700 mb-3">
+                        Los análisis se muestran en tu dashboard de forma clara y organizada.
                       </p>
+                      <div className="bg-white rounded-lg p-3 border border-neutral-200 text-xs font-body text-neutral-600">
+                        <strong className="text-neutral-900">¿Cómo se visualizan los keywords catalogados?</strong>
+                        <ul className="mt-2 space-y-2 ml-4">
+                          <li>
+                            <strong className="text-green-600">🟢 Verde:</strong> Keyword relevante que YA está en tu publicación
+                            (score alto + ya usado). ¡Perfecto!
+                          </li>
+                          <li>
+                            <strong className="text-yellow-600">🟡 Amarillo:</strong> Keyword relevante que NO está en tu publicación
+                            (score alto + no usado). <strong>Oportunidad de mejora.</strong>
+                          </li>
+                          <li>
+                            <strong className="text-red-600">🔴 Rojo:</strong> Keyword NO relevante para tu producto
+                            (score bajo). No lo uses.
+                          </li>
+                        </ul>
+                        <p className="mt-3 text-neutral-700">
+                          Podés ver los detalles completos haciendo click en cada producto, comparar el histórico de análisis,
+                          restaurar versiones anteriores, y exportar todo a Excel para trabajar offline o compartir con tu equipo.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
