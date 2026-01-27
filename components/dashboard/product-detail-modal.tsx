@@ -32,6 +32,8 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen && product) {
@@ -41,6 +43,8 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       setAnalyzedAt('')
       setAnalysisHistory([])
       setShowHistory(false)
+      setShowDeleteConfirm(false)
+      setShowRestoreConfirm(null)
 
       // Solo mostrar loading si este producto está siendo analizado
       if (currentLoadingProductId && currentLoadingProductId !== product.meli_product_id) {
@@ -193,16 +197,16 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
     }
   }
 
-  const confirmDelete = async () => {
+  const handleDeleteClick = () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true)
+      return
+    }
+    executeDelete()
+  }
+
+  const executeDelete = async () => {
     if (!product?.meli_product_id) return
-
-    const confirmed = window.confirm(
-      '¿Estás seguro de eliminar este análisis?\n\n' +
-      'Se eliminará el análisis actual pero el histórico se preservará. ' +
-      'Podrás restaurar cualquier análisis previo cuando quieras.'
-    )
-
-    if (!confirmed) return
 
     console.log('🔴 Eliminando análisis...')
     setDeletingAnalysis(true)
@@ -219,6 +223,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
         setAnalysis(null)
         setAiProvider('')
         setAnalyzedAt('')
+        setShowDeleteConfirm(false)
         await fetchAnalysisHistory()
         // Notificar cambio para refrescar la lista
         if (onAnalysisChange) onAnalysisChange()
@@ -235,16 +240,16 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
     }
   }
 
-  const confirmRestore = async (historyId: string) => {
+  const handleRestoreClick = (historyId: string) => {
+    if (showRestoreConfirm !== historyId) {
+      setShowRestoreConfirm(historyId)
+      return
+    }
+    executeRestore(historyId)
+  }
+
+  const executeRestore = async (historyId: string) => {
     if (!product?.meli_product_id) return
-
-    const confirmed = window.confirm(
-      '¿Restaurar este análisis como actual?\n\n' +
-      'Este análisis se establecerá como actual, reemplazando el que tenés ahora. ' +
-      'El histórico completo se mantendrá.'
-    )
-
-    if (!confirmed) return
 
     console.log('♻️ Restaurando análisis:', historyId)
     setRestoringId(historyId)
@@ -264,6 +269,7 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
       if (response.ok) {
         const data = await response.json()
         console.log('🟢 Análisis restaurado correctamente:', data)
+        setShowRestoreConfirm(null)
         // Recargar análisis actual y histórico
         await fetchSavedAnalysis()
         await fetchAnalysisHistory()
@@ -428,20 +434,36 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                   )}
                 </button>
                 {analysis && (
-                  <button
-                    onClick={confirmDelete}
-                    disabled={loadingAnalysis || deletingAnalysis}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors font-sans font-semibold text-sm"
-                  >
-                    {deletingAnalysis ? (
-                      <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Eliminando...
-                      </span>
-                    ) : (
-                      '🗑️ Borrar análisis'
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDeleteClick}
+                      disabled={loadingAnalysis || deletingAnalysis}
+                      className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 transition-all font-sans font-semibold text-sm ${
+                        showDeleteConfirm
+                          ? 'bg-red-700 hover:bg-red-800 animate-pulse'
+                          : 'bg-red-500 hover:bg-red-600'
+                      }`}
+                    >
+                      {deletingAnalysis ? (
+                        <span className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Eliminando...
+                        </span>
+                      ) : showDeleteConfirm ? (
+                        '⚠️ ¿Confirmar eliminación?'
+                      ) : (
+                        '🗑️ Borrar análisis'
+                      )}
+                    </button>
+                    {showDeleteConfirm && !deletingAnalysis && (
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="px-3 py-2 bg-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-400 transition-colors font-sans font-semibold text-sm"
+                      >
+                        Cancelar
+                      </button>
                     )}
-                  </button>
+                  </div>
                 )}
                 {aiProvider && analysis && (
                   <div className="flex items-center gap-2">
@@ -821,16 +843,24 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
 
                       {/* Botón de restaurar - mostrar si NO es el análisis actual */}
                       {!(idx === 0 && analysis) && (
-                        <div className="mt-3 flex justify-end">
+                        <div className="mt-3 flex justify-end gap-2">
                           <button
-                            onClick={() => confirmRestore(hist.id)}
+                            onClick={() => handleRestoreClick(hist.id)}
                             disabled={restoringId === hist.id}
-                            className="px-3 py-1.5 bg-blue-500 text-white text-xs font-sans font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                            className={`px-3 py-1.5 text-white text-xs font-sans font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 ${
+                              showRestoreConfirm === hist.id
+                                ? 'bg-blue-700 hover:bg-blue-800 animate-pulse'
+                                : 'bg-blue-500 hover:bg-blue-600'
+                            }`}
                           >
                             {restoringId === hist.id ? (
                               <>
-                                <span className="animate-spin">⟳</span>
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Restaurando...
+                              </>
+                            ) : showRestoreConfirm === hist.id ? (
+                              <>
+                                ✓ ¿Confirmar restauración?
                               </>
                             ) : (
                               <>
@@ -838,6 +868,14 @@ export function ProductDetailModal({ product, isOpen, onClose, onAnalysisChange 
                               </>
                             )}
                           </button>
+                          {showRestoreConfirm === hist.id && restoringId !== hist.id && (
+                            <button
+                              onClick={() => setShowRestoreConfirm(null)}
+                              className="px-2 py-1.5 bg-neutral-300 text-neutral-700 text-xs font-sans font-semibold rounded-lg hover:bg-neutral-400 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
