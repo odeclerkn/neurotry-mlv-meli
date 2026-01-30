@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { BackToDashboardButton } from './back-to-dashboard-button'
 import { ProductAnalysisView } from './product-analysis-view'
 
 export default async function AnalysisPage({ params }: { params: { productId: string } }) {
@@ -32,13 +32,7 @@ export default async function AnalysisPage({ params }: { params: { productId: st
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Breadcrumb y navegación */}
         <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-primary-600 hover:text-primary-700 font-body text-sm flex items-center gap-2 transition-colors group"
-          >
-            <span className="group-hover:-translate-x-1 transition-transform">←</span>
-            <span>Volver al Dashboard</span>
-          </Link>
+          <BackToDashboardButton />
 
           {product.permalink && (
             <a
