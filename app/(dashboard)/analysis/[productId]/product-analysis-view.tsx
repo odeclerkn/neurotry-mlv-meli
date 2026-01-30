@@ -16,6 +16,9 @@ export function ProductAnalysisView({ product }: ProductAnalysisViewProps) {
   const [loadingKeywords, setLoadingKeywords] = useState(true)
   const [competitors, setCompetitors] = useState<any[]>([])
   const [commercialAnalysis, setCommercialAnalysis] = useState<any>(null)
+  const [paymentAnalysis, setPaymentAnalysis] = useState<any>(null)
+  const [shippingAnalysis, setShippingAnalysis] = useState<any>(null)
+  const [frequentQuestions, setFrequentQuestions] = useState<any>(null)
   const [analysis, setAnalysis] = useState<any>(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [deletingAnalysis, setDeletingAnalysis] = useState(false)
@@ -70,14 +73,35 @@ export function ProductAnalysisView({ product }: ProductAnalysisViewProps) {
 
   const fetchCompetitors = async () => {
     try {
+      console.log('🔍 Fetching competitors for:', product.meli_product_id)
       const response = await fetch(`/api/meli/similar-products?product_id=${product.meli_product_id}`)
+      console.log('📡 Response status:', response.status, response.ok)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('📦 Full response data:', data)
+
         setCompetitors(data.competitors || [])
         setCommercialAnalysis(data.analysis?.commercial)
+        setPaymentAnalysis(data.analysis?.payment)
+        setShippingAnalysis(data.analysis?.shipping)
+        setFrequentQuestions(data.analysis?.frequentQuestions)
+
+        console.log('📊 Análisis recibido:', {
+          commercial: !!data.analysis?.commercial,
+          payment: !!data.analysis?.payment,
+          shipping: !!data.analysis?.shipping,
+          questions: data.analysis?.frequentQuestions?.totalQuestions || 0
+        })
+
+        console.log('💳 Payment Analysis:', data.analysis?.payment)
+        console.log('🚚 Shipping Analysis:', data.analysis?.shipping)
+        console.log('❓ Frequent Questions:', data.analysis?.frequentQuestions)
+      } else {
+        console.error('❌ Response not OK:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching competitors:', error)
+      console.error('❌ Error fetching competitors:', error)
     }
   }
 
@@ -703,6 +727,241 @@ export function ProductAnalysisView({ product }: ProductAnalysisViewProps) {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recomendaciones de Formas de Pago */}
+      {paymentAnalysis && paymentAnalysis.recommendation && (
+        <Card className={`border-2 ${
+          paymentAnalysis.priority === 'high' ? 'border-red-300 bg-red-50' :
+          paymentAnalysis.priority === 'medium' ? 'border-yellow-300 bg-yellow-50' :
+          'border-green-300 bg-green-50'
+        }`}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <span>💳</span>
+                Optimización de Formas de Pago
+              </CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {paymentAnalysis.priority === 'high' && '🔴 Alta Prioridad'}
+                {paymentAnalysis.priority === 'medium' && '🟡 Prioridad Media'}
+                {paymentAnalysis.priority === 'low' && '🟢 Bien Configurado'}
+              </Badge>
+            </div>
+            <CardDescription>
+              Análisis basado en competidores exitosos de tu categoría
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border border-neutral-200">
+              <h3 className="font-sans font-bold text-neutral-900 mb-2">
+                Recomendación:
+              </h3>
+              <p className="text-base font-body text-neutral-900 mb-3">
+                {paymentAnalysis.recommendation}
+              </p>
+              <p className="text-sm font-body text-neutral-600">
+                <span className="font-semibold">Razón:</span> {paymentAnalysis.reason}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-lg border border-neutral-200">
+                <h4 className="font-sans font-bold text-neutral-700 mb-3">Tu Configuración Actual</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Cuotas:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {paymentAnalysis.currentStatus.installments || 'No configurado'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Sin interés:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {paymentAnalysis.currentStatus.interestFree ? '✓ Sí' : '✗ No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-neutral-200">
+                <h4 className="font-sans font-bold text-neutral-700 mb-3">Promedio del Mercado</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Cuotas comunes:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {paymentAnalysis.marketAverage.mostCommon}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Con sin interés:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {paymentAnalysis.marketAverage.interestFreePercentage}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recomendaciones de Envío */}
+      {shippingAnalysis && shippingAnalysis.recommendation && (
+        <Card className={`border-2 ${
+          shippingAnalysis.priority === 'high' ? 'border-red-300 bg-red-50' :
+          shippingAnalysis.priority === 'medium' ? 'border-yellow-300 bg-yellow-50' :
+          'border-green-300 bg-green-50'
+        }`}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <span>🚚</span>
+                Optimización de Envío
+              </CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {shippingAnalysis.priority === 'high' && '🔴 Alta Prioridad'}
+                {shippingAnalysis.priority === 'medium' && '🟡 Prioridad Media'}
+                {shippingAnalysis.priority === 'low' && '🟢 Bien Configurado'}
+              </Badge>
+            </div>
+            <CardDescription>
+              Análisis basado en competidores exitosos de tu categoría
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border border-neutral-200">
+              <h3 className="font-sans font-bold text-neutral-900 mb-2">
+                Recomendación:
+              </h3>
+              <p className="text-base font-body text-neutral-900 mb-3">
+                {shippingAnalysis.recommendation}
+              </p>
+              <p className="text-sm font-body text-neutral-600">
+                <span className="font-semibold">Razón:</span> {shippingAnalysis.reason}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-lg border border-neutral-200">
+                <h4 className="font-sans font-bold text-neutral-700 mb-3">Tu Configuración Actual</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Envío gratis:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {shippingAnalysis.currentStatus.freeShipping ? '✓ Sí' : '✗ No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Modalidad:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {shippingAnalysis.currentStatus.fulfillmentMode === 'me2' ? 'Full' :
+                       shippingAnalysis.currentStatus.fulfillmentMode === 'me1' ? 'Flex' : 'Estándar'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-neutral-200">
+                <h4 className="font-sans font-bold text-neutral-700 mb-3">Estadísticas del Mercado</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Envío gratis:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {shippingAnalysis.marketStats.freeShippingPercentage}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-body text-neutral-600">Usan Full:</span>
+                    <span className="text-sm font-semibold text-neutral-900">
+                      {shippingAnalysis.marketStats.fullPercentage}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Preguntas Frecuentes de Usuarios */}
+      {frequentQuestions && frequentQuestions.totalQuestions > 0 && (
+        <Card className="border-2 border-indigo-200 bg-indigo-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>❓</span>
+              Preguntas Frecuentes de Compradores
+            </CardTitle>
+            <CardDescription>
+              Analizado de {frequentQuestions.totalQuestions} preguntas reales de competidores exitosos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Recomendaciones principales */}
+            {frequentQuestions.recommendations && frequentQuestions.recommendations.length > 0 && (
+              <div className="bg-yellow-50 border-2 border-yellow-300 p-4 rounded-lg">
+                <h3 className="font-sans font-bold text-yellow-900 mb-3 flex items-center gap-2">
+                  <span>💡</span>
+                  Recomendaciones para tu Publicación
+                </h3>
+                <ul className="space-y-2">
+                  {frequentQuestions.recommendations.map((rec: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm font-body text-yellow-900">
+                      <span className="text-yellow-600 font-bold">•</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Tópicos más frecuentes */}
+            <div>
+              <h3 className="font-sans font-bold text-neutral-900 mb-3">
+                Temas Más Preguntados
+              </h3>
+              <div className="space-y-3">
+                {frequentQuestions.commonTopics.slice(0, 5).map((topic: any, idx: number) => (
+                  <div key={idx} className="bg-white p-4 rounded-lg border border-indigo-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-sans font-bold text-neutral-900 capitalize">
+                        {topic.topic === 'medidas' && '📏 Medidas y Dimensiones'}
+                        {topic.topic === 'material' && '🧵 Material y Calidad'}
+                        {topic.topic === 'compatibilidad' && '🔌 Compatibilidad'}
+                        {topic.topic === 'stock' && '📦 Stock y Disponibilidad'}
+                        {topic.topic === 'envío' && '🚚 Envío y Entrega'}
+                        {topic.topic === 'garantía' && '🛡️ Garantía'}
+                        {topic.topic === 'original' && '✨ Originalidad'}
+                        {topic.topic === 'color' && '🎨 Color'}
+                        {topic.topic === 'precio' && '💰 Precio'}
+                        {!['medidas', 'material', 'compatibilidad', 'stock', 'envío', 'garantía', 'original', 'color', 'precio'].includes(topic.topic) && topic.topic}
+                      </h4>
+                      <Badge variant="default" className="bg-indigo-600 text-xs">
+                        {topic.percentage}% de preguntas
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-body text-neutral-600 mb-2">
+                      {topic.count} preguntas sobre este tema
+                    </p>
+                    {topic.examples && topic.examples.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-indigo-100">
+                        <p className="text-xs font-body text-neutral-500 mb-2">Ejemplos:</p>
+                        <ul className="space-y-1">
+                          {topic.examples.slice(0, 2).map((example: string, exIdx: number) => (
+                            <li key={exIdx} className="text-xs font-body text-neutral-700 italic flex items-start gap-2">
+                              <span className="text-indigo-400">→</span>
+                              <span>"{example}"</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
