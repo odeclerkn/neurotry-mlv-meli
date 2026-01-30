@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { ProductDetailModal } from './product-detail-modal'
 
 interface ProductsTableProps {
   products: any[]
@@ -11,15 +10,19 @@ interface ProductsTableProps {
 
 export function ProductsTable({ products }: ProductsTableProps) {
   const router = useRouter()
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [isPending, startTransition] = useTransition()
+  const [loadingProductId, setLoadingProductId] = useState<string | null>(null)
 
   // Debug: mostrar en consola los productos con análisis (solo una vez)
   const productsWithAnalysis = products.filter((p: any) => p.product_ai_analysis)
   console.log(`📊 ProductsTable - Total: ${products.length}, Con análisis: ${productsWithAnalysis.length}`)
 
-  const handleAnalysisChange = () => {
-    console.log('🔄 Análisis cambiado, refrescando página...')
-    router.refresh()
+  const handleProductClick = (product: any) => {
+    console.log('🔵 Navegando a análisis del producto:', product.title)
+    setLoadingProductId(product.meli_product_id)
+    startTransition(() => {
+      router.push(`/analysis/${product.meli_product_id}`)
+    })
   }
 
   return (
@@ -40,16 +43,15 @@ export function ProductsTable({ products }: ProductsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {products.map((product, index) => (
+            {products.map((product, index) => {
+              const isLoading = loadingProductId === product.meli_product_id
+              return (
               <tr
                 key={product.id}
-                onClick={() => {
-                  console.log('🔵 Fila clickeada, producto:', product.title)
-                  setSelectedProduct(product)
-                }}
+                onClick={() => handleProductClick(product)}
                 className={`border-b border-neutral-200 hover:bg-primary-50 transition-colors cursor-pointer ${
                   index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'
-                }`}
+                } ${isLoading ? 'opacity-60 animate-pulse' : ''}`}
               >
                 <td className="p-3">
                   <div className="relative w-12 h-12 flex-shrink-0">
@@ -153,7 +155,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                               ? 'success'
                               : analysis.overall_score >= 4
                               ? 'warning'
-                              : 'error'
+                              : 'destructive'
                           }
                           className="text-xs font-semibold"
                         >
@@ -167,17 +169,21 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   })()}
                 </td>
               </tr>
-            ))}
+            )
+            })}
           </tbody>
         </table>
       </div>
 
-      <ProductDetailModal
-        product={selectedProduct}
-        isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAnalysisChange={handleAnalysisChange}
-      />
+      {/* Indicador de carga global */}
+      {isPending && loadingProductId && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-6 flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-neutral-700 font-body">Cargando análisis del producto...</p>
+          </div>
+        </div>
+      )}
     </>
   )
 }
